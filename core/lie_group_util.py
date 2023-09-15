@@ -4,31 +4,31 @@ import torch
 sys.path.append('.')
 
 def R8_to_sl3(v):
-    G1 = torch.Tensor([[1,0,0],
+    E1 = torch.Tensor([[1,0,0],
                    [0, -1, 0],
                    [0,0,0]])
-    G2 = torch.Tensor([[0, 1,0],
+    E2 = torch.Tensor([[0, 1,0],
             [1, 0 ,0],
             [0, 0 ,0]])
-    G3 = torch.Tensor([[0, -1, 0],
+    E3 = torch.Tensor([[0, -1, 0],
             [1, 0, 0],
             [0, 0, 0]])
-    G4 = torch.Tensor([[1, 0, 0],
+    E4 = torch.Tensor([[1, 0, 0],
             [0, 1, 0],
             [0, 0, -2]])
-    G5 = torch.Tensor([[0,0,1],
+    E5 = torch.Tensor([[0,0,1],
             [0,0,0],
             [0,0,0]])
-    G6 = torch.Tensor([[0,0,0],
+    E6 = torch.Tensor([[0,0,0],
             [0,0,1],
             [0,0,0]])
-    G7 = torch.Tensor([[0,0,0],
+    E7 = torch.Tensor([[0,0,0],
             [0,0,0],
             [1,0,0]])
-    G8 = torch.Tensor([[0,0,0],
+    E8 = torch.Tensor([[0,0,0],
             [0,0,0],
             [0,1,0]])
-    return (v[0]*G1+v[1]*G2+v[2]*G3+v[3]*G4+v[4]*G5+v[5]*G6+v[6]*G7+v[7]*G8).to(v.device)
+    return (v[0]*E1+v[1]*E2+v[2]*E3+v[3]*E4+v[4]*E5+v[5]*E6+v[6]*E7+v[7]*E8).to(v.device)
 
 def sl3_to_R8(M):
     # [a1 + a4, a2 - a3,    a5]
