@@ -45,3 +45,16 @@ def sl3_to_R8(M):
     v[1] = 0.5*(M[0,1] + M[1,0])
     v[2] = 0.5*(M[1,0] - M[0,1])
     return v
+
+def compute_killing_form(x,d):
+    B,F,K,N = x.shape
+    killing_forms = torch.zeros([B,F,N])
+    for b in range(B):
+        for f in range(F):
+            for n in range(N):
+                # generate elements in sl3
+                X = R8_to_sl3(x[b,f,:,n])
+                D = R8_to_sl3(d[b,f,:,n])
+
+                killing_forms[b,f,n] = 6*torch.trace(X@D)
+    return killing_forms

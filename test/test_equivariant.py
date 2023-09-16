@@ -22,7 +22,7 @@ if __name__ == "__main__":
   # SL(3) transformation
   Y = torch.linalg.matrix_exp(R8_to_sl3(y))
   
-  model = LNLinearAndKillingNonLinearAndPooling(num_features,out_features)
+  model = LNLinearAndKillingNonLinearAndPooling(num_features,out_features,share_nonlinearity=True)
 
   new_x = torch.zeros_like(x)
   for i in range(num_points):
@@ -31,9 +31,6 @@ if __name__ == "__main__":
 
       new_X = Y @ X @ Y.inverse()
       new_x[:,j,:,i] = sl3_to_R8(new_X)
-  
-  print("x_shape ",x.shape)
-  print("new_x_shape ",new_x.shape)
 
 
   model.eval()
@@ -41,7 +38,6 @@ if __name__ == "__main__":
     out_x = model(x)
     out_new_x = model(new_x)
 
-  print(out_x.shape)
   out_x_y_conjugate = torch.zeros_like(out_x)
   for i in range(out_features):
     out_X = R8_to_sl3(out_x[0,i,:])
