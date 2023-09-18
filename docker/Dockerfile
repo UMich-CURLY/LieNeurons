@@ -30,6 +30,8 @@ RUN pip install wandb
 RUN pip install torch>=1.7.0
 RUN pip install torchvision>=0.8.1
 
-
+# einops
 RUN pip install einops
 
+# pytest
+RUN pip install pytest
