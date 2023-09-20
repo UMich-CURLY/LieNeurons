@@ -6,7 +6,7 @@ import torch
 
 from core.lie_group_util import *
 from core.lie_neurons_layers import *
-
+from core.lie_alg_util import *
 
 if __name__ == "__main__":
     print("testing equivariant linear layer")
@@ -20,39 +20,33 @@ if __name__ == "__main__":
                      ).reshape(1, num_features, 8, num_points)
     y = torch.Tensor(np.random.rand(8))
 
+    hat_layer = HatLayerSl3()
+
     # SL(3) transformation
-    Y = torch.linalg.matrix_exp(R8_to_sl3(y))
+    Y = torch.linalg.matrix_exp(hat_layer(y))
 
     model = LNLinearAndKillingNonLinearAndPooling(
         num_features, out_features, share_nonlinearity=True, abs_killing_form=False)
 
-    new_x = torch.zeros_like(x)
-    for i in range(num_points):
-        for j in range(num_features):
-            X = R8_to_sl3(x[0, j, :, i])
-
-            new_X = Y @ X @ Y.inverse()
-            new_x[:, j, :, i] = sl3_to_R8(new_X)
+    x_hat = hat_layer(x.transpose(2, -1))
+    new_x_hat = torch.matmul(Y, torch.matmul(x_hat, torch.inverse(Y)))
+    new_x = vee_sl3(new_x_hat).transpose(2, -1)
 
     model.eval()
     with torch.no_grad():
         out_x = model(x)
         out_new_x = model(new_x)
 
-    out_x_y_conjugate = torch.zeros_like(out_x)
-    for i in range(out_features):
-        out_X = R8_to_sl3(out_x[0, i, :])
-        out_new_X = R8_to_sl3(out_new_x[0, i, :])
-
-        out_X_Y_conjugate = Y @ out_X @ Y.inverse()
-        out_x_y_conjugate[0, i, :] = sl3_to_R8(out_X_Y_conjugate)
+    out_x_hat = hat_layer(out_x.transpose(2, -1))
+    out_x_hat_conj = torch.matmul(Y, torch.matmul(out_x_hat, torch.inverse(Y)))
+    out_x_conj = vee_sl3(out_x_hat_conj).transpose(2, -1)
 
     test_result = torch.allclose(
-        out_new_x, out_x_y_conjugate, rtol=1e-4, atol=1e-4)
+        out_new_x, out_x_conj, rtol=1e-4, atol=1e-4)
 
     print("out x[0,0,:]", out_x[0, 0, :])
-    print("out x conjugate[0,0,:]: ", out_x_y_conjugate[0, 0, :])
+    print("out x conj[0,0,:]: ", out_x_conj[0, 0, :])
     print("out new x[0,0,:]: ", out_new_x[0, 0, :])
-    print("differences: ", out_x_y_conjugate[0, 0, :] - out_new_x[0, 0, :])
+    print("differences: ", out_x_conj[0, 0, :] - out_new_x[0, 0, :])
 
     print("The network is equivariant: ", test_result)

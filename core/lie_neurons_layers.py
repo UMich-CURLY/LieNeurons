@@ -1,4 +1,5 @@
 from core.lie_group_util import *
+from core.lie_alg_util import *
 import os
 import sys
 import copy
@@ -36,6 +37,8 @@ class LNKillingRelu(nn.Module):
         else:
             self.learn_dir = nn.Linear(in_channels, in_channels, bias=False)
 
+        self.HatLayerSl3 = HatLayerSl3()
+
     def forward(self, x):
         '''
         x: point features of shape [B, F, 8, N]
@@ -44,25 +47,15 @@ class LNKillingRelu(nn.Module):
         x_out = torch.zeros_like(x)
 
         d = self.learn_dir(x.transpose(1, -1)).transpose(1, -1)
-        for b in range(B):
-            for f in range(F):
-                for n in range(N):
-                    # generate elements in sl3
-                    X = R8_to_sl3(x[b, f, :, n])
-                    if not self.share_nonlinearity:
-                        cur_d = d[b, f, :, n]
-                    else:
-                        cur_d = d[b, 0, :, n]
 
-                    D = R8_to_sl3(cur_d)
+        x = x.transpose(2, -1)
+        d = d.transpose(2, -1)
 
-                    # TODO: move killing form computation to a function and support multiple groups
-                    killing_form = 6*torch.trace(X@D)
-                    if killing_form < 0:
-                        x_out[b, f, :, n] = x[b, f, :, n]
-                    else:
-                        x_out[b, f, :, n] = x[b, f, :, n] - \
-                            (-killing_form) * cur_d
+        x_hat = self.HatLayerSl3(x)
+        d_hat = self.HatLayerSl3(d)
+        killing_form = killingform_sl3(x_hat, d_hat)
+        x_out = torch.where(killing_form < 0, x, x - (-killing_form) * d)
+        x_out = x_out.transpose(2, -1)
 
         return x_out
 
@@ -93,17 +86,22 @@ class LNMaxPool(nn.Module):
         super(LNMaxPool, self).__init__()
         self.learn_dir = nn.Linear(in_channels, in_channels, bias=False)
         self.absolute = abs_killing_form
+        self.hat_layer = HatLayerSl3()
 
     def forward(self, x):
         '''
         x: point features of shape [B, N_feat, 3, N_samples, ...]
         '''
         B, F, K, N = x.shape
-        killing_forms = torch.zeros([B, F, N])
+        # killing_forms = torch.zeros([B, F, N])
 
         d = self.learn_dir(x.transpose(1, -1)).transpose(1, -1)
 
-        killing_forms = compute_killing_form(x, d)
+        x_hat = self.hat_layer(x.transpose(2, -1))
+        d_hat = self.hat_layer(d.transpose(2, -1))
+        killing_forms = killingform_sl3(x_hat, d_hat).squeeze(-1)
+
+        # killing_forms = compute_killing_form(x, d)
 
         if not self.absolute:
             idx = killing_forms.max(dim=-1, keepdim=False)[1]
@@ -158,12 +156,18 @@ class LNBatchNorm(nn.Module):
         elif dim == 5:
             self.bn = nn.BatchNorm2d(num_features)
 
+        self.hat_layer = HatLayerSl3()
+
     def forward(self, x):
         '''
         x: point features of shape [B, N_feat, 3, N_samples, ...]
         '''
 
-        killing_forms = compute_killing_form(x, x) + EPS
+        x_hat = self.hat_layer(x.transpose(2, -1))
+        killing_forms = killingform_sl3(x_hat, x_hat) + EPS
+        killing_forms = killing_forms.squeeze(-1)
+
+        # killing_forms = compute_killing_form(x, x) + EPS
 
         kf_bn = self.bn(killing_forms)
         killing_forms = killing_forms.unsqueeze(2)
