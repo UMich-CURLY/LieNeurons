@@ -1,5 +1,5 @@
-import sys
-sys.path.append('.')
+import sys  # nopep8
+sys.path.append('.')  # nopep8
 
 import numpy as np
 import torch

@@ -1,8 +1,9 @@
-import sys
-sys.path.append('.')
+import sys  # nopep8
+sys.path.append('.')  # nopep8
 
 import numpy as np
 import torch
+from scipy.linalg import expm
 
 from core.lie_group_util import *
 from core.lie_neurons_layers import *
@@ -17,15 +18,34 @@ if __name__ == "__main__":
     num_features = 10
     out_features = 3
     batch_size = 20
+    rnd_scale = 10
 
     hat_layer = HatLayerSl3()
 
-    x = torch.Tensor(np.random.rand(batch_size, num_features, 8, num_points)).reshape(
+    x = torch.Tensor(np.random.uniform(-rnd_scale, rnd_scale, (batch_size, num_features, 8, num_points))).reshape(
         batch_size, num_features, 8, num_points)
-    y = torch.Tensor(np.random.rand(8))
+    y = torch.Tensor(np.random.uniform(-rnd_scale, rnd_scale, 8))
 
     # SL(3) transformation
     Y = torch.linalg.matrix_exp(hat_layer(y))
+    print(hat_layer(y))
+    print(torch.trace(hat_layer(y)))
+    print(Y)
+    print(torch.det(Y))
+    Y2 = expm(hat_layer(y).numpy())
+    print(Y2)
+    print(np.linalg.det(Y2))
+    # Z = torch.Tensor(np.random.uniform(-rnd_scale, rnd_scale, (3, 3)))
+    # print(Z)
+    # print("det:", torch.det(Z))
+    # print(torch.pow(torch.det(Z), 1/3))
+    # if torch.det(Z) > 0:
+    #     Z = Z/torch.pow(torch.det(Z), 1/3)
+    # elif torch.det(Z) < 0:
+    #     Z = -Z/torch.pow(-torch.det(Z), 1/3)
+    # print(Z)
+    # print(torch.det(Z))
+    # Y = Z
 
     model = LNLinearAndKillingNonLinearAndPooling(
         num_features, out_features, share_nonlinearity=True, use_batch_norm=True, dim=4)
@@ -46,9 +66,9 @@ if __name__ == "__main__":
     test_result = torch.allclose(
         out_new_x, out_x_conj, rtol=1e-4, atol=1e-4)
 
-    print("out x[0,0,:]", out_x[0, 0, :])
-    print("out x conj[0,0,:]: ", out_x_conj[0, 0, :])
-    print("out new x[0,0,:]: ", out_new_x[0, 0, :])
-    print("differences: ", out_x_conj[0, 0, :] - out_new_x[0, 0, :])
+    # print("out x[0,0,:]", out_x[0, 0, :])
+    # print("out x conj[0,0,:]: ", out_x_conj[0, 0, :])
+    # print("out new x[0,0,:]: ", out_new_x[0, 0, :])
+    # print("differences: ", out_x_conj[0, 0, :] - out_new_x[0, 0, :])
 
-    print("The network is equivariant: ", test_result)
+    # print("The network is equivariant: ", test_result)

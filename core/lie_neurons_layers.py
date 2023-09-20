@@ -115,20 +115,20 @@ class LNMaxPool(nn.Module):
 
 
 class LNLinearAndKillingNonLinearAndPooling(nn.Module):
-    def __init__(self, in_channels, out_channels, share_nonlinearity=False, abs_killing_form=False,\
-                  use_batch_norm=False, dim=5):
+    def __init__(self, in_channels, out_channels, share_nonlinearity=False, abs_killing_form=False,
+                 use_batch_norm=False, dim=5):
         super(LNLinearAndKillingNonLinearAndPooling, self).__init__()
         self.share_nonlinearity = share_nonlinearity
 
         self.linear = LNLinear(in_channels, out_channels)
         self.leaky_relu = LNKillingRelu(
             out_channels, share_nonlinearity=share_nonlinearity)
-        self.max_pool = LNMaxPool(out_channels, abs_killing_form=abs_killing_form)
+        self.max_pool = LNMaxPool(
+            out_channels, abs_killing_form=abs_killing_form)
         self.use_batch_norm = use_batch_norm
 
         if use_batch_norm:
             self.batch_norm = LNBatchNorm(out_channels, dim=dim)
-            
 
     def forward(self, x):
         '''
