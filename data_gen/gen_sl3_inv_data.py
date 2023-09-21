@@ -13,7 +13,6 @@ def invariant_function(x1,x2):
 
 
 if __name__ == "__main__":
-    # total points: num_points * batch_size
     data_saved_path = "data/sl3_inv_data/"
     num_training = 100
     num_testing = 30
@@ -50,11 +49,11 @@ if __name__ == "__main__":
         print(invariant_function(x1_hat[0,0,n,:,:],x2_hat[0,0,n,:,:]))
         print(invariant_function(conj_x1_hat[0,0,n,:,:],conj_x2_hat[0,0,n,:,:]))
 
-    train_data['x1'] = x1.numpy()
-    train_data['x2'] = x2.numpy()
-    train_data['x1_conjugate'] = conj_x1.numpy()
-    train_data['x2_conjugate'] = conj_x2.numpy()
-    train_data['y'] = inv_output.numpy()
+    train_data['x1'] = x1.numpy().reshape(8,num_training)
+    train_data['x2'] = x2.numpy().reshape(8,num_training)
+    train_data['x1_conjugate'] = conj_x1.numpy().reshape(8,num_training)
+    train_data['x2_conjugate'] = conj_x2.numpy().reshape(8,num_training)
+    train_data['y'] = inv_output.numpy().reshape(1,num_training)
 
     np.savez(data_saved_path + "sl3_inv_train_data.npz", **train_data)
 
@@ -82,11 +81,11 @@ if __name__ == "__main__":
         inv_output[0,n,0] = invariant_function(x1_hat[0,0,n,:,:],x2_hat[0,0,n,:,:])
 
 
-    test_data['x1'] = x1.numpy()
-    test_data['x2'] = x2.numpy()
-    test_data['x1_conjugate'] = conj_x1.numpy()
-    test_data['x2_conjugate'] = conj_x2.numpy()
-    test_data['y'] = inv_output.numpy()
+    test_data['x1'] = x1.numpy().reshape(8,num_testing)
+    test_data['x2'] = x2.numpy().reshape(8,num_testing)
+    test_data['x1_conjugate'] = conj_x1.numpy().reshape(8,num_testing)
+    test_data['x2_conjugate'] = conj_x2.numpy().reshape(8,num_testing)
+    test_data['y'] = inv_output.numpy().reshape(1,num_testing)
 
     np.savez(data_saved_path + "sl3_inv_test_data.npz", **test_data)
 

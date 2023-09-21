@@ -9,6 +9,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from einops import rearrange, repeat
+from einops.layers.torch import Rearrange
+
 sys.path.append('.')
 
 
@@ -160,7 +163,7 @@ class LNBatchNorm(nn.Module):
 
     def forward(self, x):
         '''
-        x: point features of shape [B, N_feat, 3, N_samples, ...]
+        x: point features of shape [B, N_feat, K, N_samples, ...]
         '''
 
         x_hat = self.hat_layer(x.transpose(2, -1))
@@ -175,3 +178,28 @@ class LNBatchNorm(nn.Module):
         x = x / killing_forms * kf_bn
 
         return x
+
+
+class LNInvariantPooling(nn.Module):
+    def __init__(self, method='killing'):
+        super(LNInvariantPooling, self).__init__()
+
+        self.hat_layer = HatLayerSl3()
+        self.method = method
+
+    def forward(self, x):
+        '''
+        x: point features of shape [B, N_feat, K, N_samples, ...]
+        '''
+        x_hat = self.hat_layer(x.transpose(2, -1))
+        if self.method == 'killing':
+            x_out = killingform_sl3(x_hat, x_hat)
+        elif self.method == 'det':
+            b, f, n, _, _ = x_hat.shape
+            x_out = rearrange(torch.det(
+                rearrange(x_hat, 'b f n m1 m2 -> (b f n) m1 m2')), '(b f n) -> b f n 1', b=b, f=f, n=n)
+        elif self.method == 'trace':
+            x_out = (x_hat.transpose(-1, -2) *
+                     x_hat).sum(dim=(-1, -2))[..., None]
+
+        return x_out
