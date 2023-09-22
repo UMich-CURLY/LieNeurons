@@ -22,6 +22,8 @@ class SL3InvariantLayers(nn.Module):
     def __init__(self, in_channels):
         super(SL3InvariantLayers, self).__init__()
         self.ln_fc = LNLinearAndKillingRelu(in_channels, 10)
+        self.ln_norm = LNBatchNorm(10, dim=3)
+        self.ln_fc2 = LNLinearAndKillingRelu(10, 10)
         self.ln_inv = LNInvariantPooling(method='killing')
         self.fc = nn.Linear(10, 10)
         self.relu = nn.ReLU()
@@ -32,6 +34,8 @@ class SL3InvariantLayers(nn.Module):
         x input of shape [B, F, 8, 1]
         '''
         x = self.ln_fc(x)   # [B, F, 8, 1]
+        x = self.ln_norm(x)  # [B, F, 8, 1]
+        # x = self.ln_fc2(x)  # [B, F, 8, 1]
         x_inv = self.ln_inv(x)  # [B, F, 1, 1]
         x_inv = self.fc(torch.permute(x_inv, (0, 3, 2, 1)))  # [B, 1, 1, 10]
         x_inv = self.relu(x_inv)    # [B, 1, 1, 10]

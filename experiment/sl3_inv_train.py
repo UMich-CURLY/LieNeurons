@@ -8,6 +8,7 @@ import yaml
 import numpy as np
 from tqdm import tqdm
 import matplotlib.pyplot as plt
+import time
 
 import torch
 from torch import nn
@@ -23,7 +24,7 @@ from data_loader.sl3_inv_data_loader import *
 
 def init_writer(config):
     writer = SummaryWriter(
-        config['log_writer_path'], comment=config['model_description'])
+        config['log_writer_path']+str(time.localtime()), comment=config['model_description'])
     writer.add_text("train_data_path: ", config['train_data_path'])
     writer.add_text("model_save_path: ", config['model_save_path'])
     writer.add_text("log_writer_path: ", config['log_writer_path'])
@@ -89,9 +90,9 @@ def train(model, train_loader, test_loader, config, device='cpu'):
 
             # we only update the weights every config['update_every_batch'] iterations
             # This is to simulate a larger batch size
-            if (i+1) % config['update_every_batch'] == 0:
-                optimizer.step()
-                optimizer.zero_grad()
+            # if (i+1) % config['update_every_batch'] == 0:
+            optimizer.step()
+            optimizer.zero_grad()
 
             # cur_training_loss_history.append(loss.item())
             running_loss += loss.item()

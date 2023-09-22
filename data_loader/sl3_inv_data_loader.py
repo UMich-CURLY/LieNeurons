@@ -20,12 +20,14 @@ class sl3InvDataSet(Dataset):
         self.x2 = torch.from_numpy(data['x2']).type(
             'torch.FloatTensor').to(device).reshape(num_points, 1, 8, 1)
         self.x = torch.cat((self.x1, self.x2), dim=1)
+
         self.x1_conjugate = torch.from_numpy(data['x1_conjugate']).type(
             'torch.FloatTensor').to(device).reshape(num_points, 1, 8, 1)
         self.x2_conjugate = torch.from_numpy(data['x2_conjugate']).type(
             'torch.FloatTensor').to(device).reshape(num_points, 1, 8, 1)
         self.x_conjugate = torch.cat(
             (self.x1_conjugate, self.x2_conjugate), dim=1)
+
         self.y = torch.from_numpy(data['y']).type(
             'torch.FloatTensor').to(device).reshape(num_points, 1)
 
@@ -40,7 +42,7 @@ class sl3InvDataSet(Dataset):
 
         sample = {'x1': self.x1[idx, :, :, :], 'x2': self.x2[idx, :, :, :], 'x': self.x[idx, :, :, :],
                   'x1_conjugate': self.x1_conjugate[idx, :, :, :], 'x2_conjugate': self.x2_conjugate[idx, :, :, :],
-                  'x_conjugate': self.x_conjugate, 'y': self.y[idx, :]}
+                  'x_conjugate': self.x_conjugate[idx, :, :, :], 'y': self.y[idx, :]}
         return sample
 
 
@@ -53,6 +55,7 @@ if __name__ == "__main__":
     print(DataLoader.x1_conjugate.shape)
     print(DataLoader.x2_conjugate.shape)
     print(DataLoader.x.shape)
+    print(DataLoader.x_conjugate.shape)
     print(DataLoader.y.shape)
     for i, samples in tqdm(enumerate(DataLoader, start=0)):
         input_data = samples['x']
