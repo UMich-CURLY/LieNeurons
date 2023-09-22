@@ -63,9 +63,9 @@ class LNKillingRelu(nn.Module):
         return x_out
 
 
-class LNLinearAndKillingNonLinear(nn.Module):
+class LNLinearAndKillingRelu(nn.Module):
     def __init__(self, in_channels, out_channels, share_nonlinearity=False):
-        super(LNLinearAndKillingNonLinear, self).__init__()
+        super(LNLinearAndKillingRelu, self).__init__()
         self.share_nonlinearity = share_nonlinearity
 
         self.linear = LNLinear(in_channels, out_channels)
@@ -117,10 +117,10 @@ class LNMaxPool(nn.Module):
         return x_max
 
 
-class LNLinearAndKillingNonLinearAndPooling(nn.Module):
+class LNLinearAndKillingReluAndPooling(nn.Module):
     def __init__(self, in_channels, out_channels, share_nonlinearity=False, abs_killing_form=False,
                  use_batch_norm=False, dim=5):
-        super(LNLinearAndKillingNonLinearAndPooling, self).__init__()
+        super(LNLinearAndKillingReluAndPooling, self).__init__()
         self.share_nonlinearity = share_nonlinearity
 
         self.linear = LNLinear(in_channels, out_channels)

@@ -26,7 +26,7 @@ if __name__ == "__main__":
     # SL(3) transformation
     Y = torch.linalg.matrix_exp(hat_layer(y))
 
-    model = LNLinearAndKillingNonLinear(
+    model = LNLinearAndKillingRelu(
         num_features, out_features, share_nonlinearity=True)
 
     x_hat = hat_layer(x.transpose(2, -1))

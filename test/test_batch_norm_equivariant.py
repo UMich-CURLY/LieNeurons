@@ -28,7 +28,7 @@ if __name__ == "__main__":
     # SL(3) transformation
     Y = torch.linalg.matrix_exp(hat_layer(y))
 
-    model = LNLinearAndKillingNonLinearAndPooling(
+    model = LNLinearAndKillingReluAndPooling(
         num_features, out_features, share_nonlinearity=True, use_batch_norm=True, dim=4)
 
     x_hat = hat_layer(x.transpose(2, -1))
@@ -47,9 +47,9 @@ if __name__ == "__main__":
     test_result = torch.allclose(
         out_new_x, out_x_conj, rtol=1e-4, atol=1e-4)
 
-    print("out x[0,0,:]", out_x[0, 0, :])
-    print("out x conj[0,0,:]: ", out_x_conj[0, 0, :])
-    print("out new x[0,0,:]: ", out_new_x[0, 0, :])
-    print("differences: ", out_x_conj[0, 0, :] - out_new_x[0, 0, :])
+    # print("out x[0,0,:]", out_x[0, 0, :])
+    # print("out x conj[0,0,:]: ", out_x_conj[0, 0, :])
+    # print("out new x[0,0,:]: ", out_new_x[0, 0, :])
+    # print("differences: ", out_x_conj[0, 0, :] - out_new_x[0, 0, :])
 
-    print("The network is equivariant: ", test_result)
+    # print("The network is equivariant: ", test_result)
