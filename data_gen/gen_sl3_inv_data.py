@@ -11,12 +11,13 @@ from core.lie_neurons_layers import *
 
 def invariant_function(x1, x2):
     return torch.sin(torch.trace(x1@x1))-torch.pow(torch.trace(x2@x2), 3)/2.0+torch.det(x1@x2)
+    # return torch.sin(torch.trace(x1@x2))
 
 
 if __name__ == "__main__":
     data_saved_path = "data/sl3_inv_data/"
-    num_training = 1000
-    num_testing = 300
+    num_training = 100
+    num_testing = 30
     rnd_scale = 1
 
     train_data = {}

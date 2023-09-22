@@ -60,6 +60,7 @@ def train(model, train_loader, test_loader, config, device='cpu'):
 
     # create criterion
     criterion = nn.MSELoss().to(device)
+    # criterion = nn.L1Loss().to(device)
     optimizer = optim.Adam(model.parameters(
     ), lr=config['initial_learning_rate'], weight_decay=config['weight_decay_rate'])
     # scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma=config['learning_rate_decay_rate'])
@@ -86,7 +87,7 @@ def train(model, train_loader, test_loader, config, device='cpu'):
             output = model(x)
 
             loss = criterion(output, y)
-            loss.backward(retain_graph=True)
+            loss.backward()
 
             # we only update the weights every config['update_every_batch'] iterations
             # This is to simulate a larger batch size
@@ -133,8 +134,8 @@ def train(model, train_loader, test_loader, config, device='cpu'):
         # print("Finished epoch %d / %d, training top 1 acc: %.4f, training top 5 acc: %.4f, \
         #       validation top1 acc: %.4f, validation top 5 acc: %.4f" %\
         #     (epoch, config['num_epochs'], train_top1, train_top5, val_top1, val_top5))
-        print("Finished epoch %d / %d, test loss: %.4f" %
-              (epoch, config['num_epochs'], test_loss))
+        print("Finished epoch %d / %d, train loss: %.4f test loss: %.4f" %
+              (epoch, config['num_epochs'], train_loss, test_loss))
 
         # save model
         state = {'epoch': epoch,
@@ -169,6 +170,7 @@ def main():
                              shuffle=config['shuffle'])
     # for i, samples in tqdm(enumerate(train_loader, start=0)):
     model = SL3InvariantLayers(2).to(device)
+    # model = MLP(16).to(device)
 
     train(model, train_loader, test_loader, config, device)
 

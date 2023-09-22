@@ -21,13 +21,17 @@ from core.lie_neurons_layers import *
 class SL3InvariantLayers(nn.Module):
     def __init__(self, in_channels):
         super(SL3InvariantLayers, self).__init__()
-        self.ln_fc = LNLinearAndKillingRelu(in_channels, 10)
-        self.ln_norm = LNBatchNorm(10, dim=3)
-        self.ln_fc2 = LNLinearAndKillingRelu(10, 10)
+        feat_dim = 10
+        self.ln_fc = LNLinearAndKillingRelu(
+            in_channels, feat_dim, share_nonlinearity=True)
+        self.ln_norm = LNBatchNorm(feat_dim, dim=3)
+        self.ln_fc2 = LNLinearAndKillingRelu(feat_dim, feat_dim)
         self.ln_inv = LNInvariantPooling(method='killing')
-        self.fc = nn.Linear(10, 10)
+        self.fc = nn.Linear(feat_dim, feat_dim)
         self.relu = nn.ReLU()
-        self.fc2 = nn.Linear(10, 1)
+        self.fc2 = nn.Linear(feat_dim, feat_dim)
+        self.fc3 = nn.Linear(feat_dim, feat_dim)
+        self.fc_final = nn.Linear(feat_dim, 1)
 
     def forward(self, x):
         '''
@@ -35,10 +39,42 @@ class SL3InvariantLayers(nn.Module):
         '''
         x = self.ln_fc(x)   # [B, F, 8, 1]
         x = self.ln_norm(x)  # [B, F, 8, 1]
-        # x = self.ln_fc2(x)  # [B, F, 8, 1]
+        x = self.ln_fc2(x)  # [B, F, 8, 1]
         x_inv = self.ln_inv(x)  # [B, F, 1, 1]
-        x_inv = self.fc(torch.permute(x_inv, (0, 3, 2, 1)))  # [B, 1, 1, 10]
-        x_inv = self.relu(x_inv)    # [B, 1, 1, 10]
-        x_out = torch.reshape(self.fc2(x_inv), (-1, 1))     # [B, 1]
+        # [B, 1, 1, feat_dim]
+        x_inv = self.fc(torch.permute(x_inv, (0, 3, 2, 1)))
+        x_inv = self.relu(x_inv)    # [B, 1, 1, feat_dim]
+        x_inv = self.fc2(x_inv)
+        x_inv = self.relu(x_inv)
+        # x_inv = self.fc3(x_inv)
+        # x_inv = self.relu(x_inv)
+        x_out = torch.reshape(self.fc_final(x_inv), (-1, 1))     # [B, 1]
+
+        return x_out
+
+
+class MLP(nn.Module):
+    def __init__(self, in_channels):
+        super(MLP, self).__init__()
+        feat_dim = 10
+        self.fc = nn.Linear(in_channels, feat_dim)
+        self.relu = nn.ReLU()
+        self.fc2 = nn.Linear(feat_dim, feat_dim)
+        self.fc3 = nn.Linear(feat_dim, feat_dim)
+        self.fc_final = nn.Linear(feat_dim, 1)
+
+    def forward(self, x):
+        '''
+        x input of shape [B, F, 8, 1]
+        '''
+        B, _, _, _ = x.shape
+        x = torch.reshape(x, (B, -1))
+        x = self.fc(x)
+        x = self.relu(x)
+        x = self.fc2(x)
+        x = self.relu(x)
+        # x = self.fc3(x)
+        # x = self.relu(x)
+        x_out = torch.reshape(self.fc_final(x), (-1, 1))     # [B, 1]
 
         return x_out

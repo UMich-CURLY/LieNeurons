@@ -56,8 +56,9 @@ class LNKillingRelu(nn.Module):
 
         x_hat = self.HatLayerSl3(x)
         d_hat = self.HatLayerSl3(d)
-        killing_form = killingform_sl3(x_hat, d_hat)
-        x_out = torch.where(killing_form < 0, x, x - (-killing_form) * d)
+        kf_xd = killingform_sl3(x_hat, d_hat)
+        kf_dd = killingform_sl3(d_hat, d_hat)
+        x_out = torch.where(kf_xd < 0, x, x - (-kf_xd)/(-kf_dd) * d)
         x_out = x_out.transpose(2, -1)
 
         return x_out

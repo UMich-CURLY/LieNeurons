@@ -27,7 +27,7 @@ class sl3InvDataSet(Dataset):
             'torch.FloatTensor').to(device).reshape(num_points, 1, 8, 1)
         self.x_conjugate = torch.cat(
             (self.x1_conjugate, self.x2_conjugate), dim=1)
-
+        self.x = torch.cat((self.x, self.x_conjugate), dim=0)
         self.y = torch.from_numpy(data['y']).type(
             'torch.FloatTensor').to(device).reshape(num_points, 1)
 
@@ -60,5 +60,5 @@ if __name__ == "__main__":
     for i, samples in tqdm(enumerate(DataLoader, start=0)):
         input_data = samples['x']
         y = samples['y']
-        # print(y.shape)
+        print(y)
         # print(input_data.shape)
