@@ -1,12 +1,13 @@
-train_data_path: "/home/justin/code/LieNeurons/data/sl3_inv_data/sl3_inv_100_s_05_train_data.npz"
-test_data_path: "/home/justin/code/LieNeurons/data/sl3_inv_data/sl3_inv_100_s_05_test_data.npz"
-
+# train_data_path: "/home/justin/code/LieNeurons/data/sl3_inv_data/sl3_inv_10000_s_05_train_data.npz"
+# test_data_path: "/home/justin/code/LieNeurons/data/sl3_inv_data/sl3_inv_10000_s_05_test_data.npz"
+train_data_path: "/home/justin/code/LieNeurons/data/sl3_inv_5_input_data/sl3_inv_100_s_05_train_data.npz"
+test_data_path: "/home/justin/code/LieNeurons/data/sl3_inv_5_input_data/sl3_inv_100_s_05_test_data.npz"
 # logger
 model_description: "SL3InvariantFunctionFitting"
 
 print_freq: 100
-model_save_path: "/home/justin/code/LieNeurons/weights/0925_sl3_inv_LN_256_share_nonlin_train_100"
-log_writer_path: "/home/justin/code/LieNeurons/logs/0925_sl3_inv_LN_256_share_nonlin_train_100"
+model_save_path: "/home/justin/code/LieNeurons/weights/0925_sl3_inv_5_input_LN_256_share_nonlin_train_100_lr_0.0000001"
+log_writer_path: "/home/justin/code/LieNeurons/logs/0925_sl3_inv_5_input_LN_256_share_nonlin_train_100_lr_0.0000001"
 
 resume_training: false
 resume_model_path: "/home/justin/code/LieNeurons/weights/0921_sl3_inv_first_try.pth.tar"

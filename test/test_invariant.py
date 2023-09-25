@@ -7,6 +7,7 @@ import torch
 from core.lie_group_util import *
 from core.lie_neurons_layers import *
 from core.lie_alg_util import *
+from experiment.sl3_inv_layers import *
 
 
 if __name__ == "__main__":
@@ -17,7 +18,7 @@ if __name__ == "__main__":
     num_features = 10
     out_features = 3
     batch_size = 20
-    rnd_scale = 1
+    rnd_scale = 0.5
 
     hat_layer = HatLayerSl3()
 
@@ -27,13 +28,14 @@ if __name__ == "__main__":
 
     # SL(3) transformation
     Y = torch.linalg.matrix_exp(hat_layer(y))
-
-    model = LNInvariantPooling(method='killing')
+    
+    # model = LNInvariantPooling(num_features,method='learned_killing')
+    model = SL3InvariantLayers(num_features)
 
     x_hat = hat_layer(x.transpose(2, -1))
     new_x_hat = torch.matmul(Y, torch.matmul(x_hat, torch.inverse(Y)))
     new_x = vee_sl3(new_x_hat).transpose(2, -1)
-
+    
     model.eval()
     with torch.no_grad():
         out_x = model(x)
@@ -42,8 +44,8 @@ if __name__ == "__main__":
     test_result = torch.allclose(
         out_new_x, out_x, rtol=1e-4, atol=1e-4)
 
-    print("out x[0,0,:]", out_x[0, 0, :])
-    print("out new x[0,0,:]: ", out_new_x[0, 0, :])
-    print("differences: ", out_x[0, 0, :] - out_new_x[0, 0, :])
+    print("out x[0,0,:]", out_x[0, :])
+    print("out new x[0,0,:]: ", out_new_x[0, :])
+    print("differences: ", out_x[ 0, :] - out_new_x[ 0, :])
 
     print("The network is equivariant: ", test_result)

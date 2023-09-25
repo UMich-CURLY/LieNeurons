@@ -22,14 +22,15 @@ class SL3InvariantLayers(nn.Module):
     def __init__(self, in_channels):
         super(SL3InvariantLayers, self).__init__()
         feat_dim = 256
-        inv_dir_dim = 32
+        inv_dir_dim = 1
+        share_nonlinearity = False
         self.ln_fc = LNLinearAndKillingRelu(
-            in_channels, feat_dim, share_nonlinearity=True)
+            in_channels, feat_dim, share_nonlinearity=share_nonlinearity)
         self.ln_norm = LNBatchNorm(feat_dim, dim=3)
-        self.ln_fc2 = LNLinearAndKillingRelu(feat_dim, feat_dim)
-        self.ln_fc3 = LNLinearAndKillingRelu(feat_dim, feat_dim)
+        self.ln_fc2 = LNLinearAndKillingRelu(feat_dim, feat_dim,share_nonlinearity=share_nonlinearity)
+        self.ln_fc3 = LNLinearAndKillingRelu(feat_dim, feat_dim,share_nonlinearity=share_nonlinearity)
         self.ln_inv = LNInvariantPooling(
-            feat_dim, dir_dim=inv_dir_dim, method='learned_killing')
+            feat_dim, dir_dim=inv_dir_dim, method='self_killing')
         self.fc = nn.Linear(feat_dim, feat_dim)
         self.relu = nn.ReLU()
         self.fc2 = nn.Linear(feat_dim, feat_dim)

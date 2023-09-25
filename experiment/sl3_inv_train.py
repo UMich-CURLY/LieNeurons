@@ -66,13 +66,13 @@ def train(model, train_loader, test_loader, config, device='cpu'):
     # scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma=config['learning_rate_decay_rate'])
     # scheduler = optim.lr_scheduler.LinearLR(optimizer,total_iters=config['num_epochs'])
 
-    if config['resume_training']:
-        checkpoint = torch.load(config['resume_model_path'])
-        model.load_state_dict(checkpoint['model_state_dict'])
-        optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-        start_epoch = checkpoint['epoch']
-    else:
-        start_epoch = 0
+    # if config['resume_training']:
+    #     checkpoint = torch.load(config['resume_model_path'])
+    #     model.load_state_dict(checkpoint['model_state_dict'])
+    #     optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+    #     start_epoch = checkpoint['epoch']
+    # else:
+    start_epoch = 0
 
     best_loss = 1000000000
     for epoch in range(start_epoch, config['num_epochs']):
@@ -119,7 +119,7 @@ def train(model, train_loader, test_loader, config, device='cpu'):
         writer.add_scalar('test loss', test_loss, epoch)
 
         # if we achieve best val loss, save the model
-        if test_loss > best_loss:
+        if test_loss < best_loss:
             best_loss = test_loss
 
             state = {'epoch': epoch,
@@ -163,17 +163,32 @@ def main():
     # load yaml file
     config = yaml.safe_load(open(args.training_config))
 
-    training_set = sl3InvDataSet(config['train_data_path'], device=device)
+
+    # training_set = sl3InvDataSet2Input(config['train_data_path'], device=device)
+    # train_loader = DataLoader(dataset=training_set, batch_size=config['batch_size'],
+    #                           shuffle=config['shuffle'])
+
+    # test_set = sl3InvDataSet2Input(config['test_data_path'], device=device)
+    # test_loader = DataLoader(dataset=test_set, batch_size=config['batch_size'],
+    #                          shuffle=config['shuffle'])
+    
+    # model = SL3InvariantLayers(2).to(device)
+    # # model = SL3InvariantLayersTest(2).to(device)
+    # # model = MLP(16).to(device)
+
+
+    # 5 input 
+    training_set = sl3InvDataSet5Input(config['train_data_path'], device=device)
     train_loader = DataLoader(dataset=training_set, batch_size=config['batch_size'],
                               shuffle=config['shuffle'])
 
-    test_set = sl3InvDataSet(config['test_data_path'], device=device)
+    test_set = sl3InvDataSet5Input(config['test_data_path'], device=device)
     test_loader = DataLoader(dataset=test_set, batch_size=config['batch_size'],
                              shuffle=config['shuffle'])
-    # for i, samples in tqdm(enumerate(train_loader, start=0)):
-    model = SL3InvariantLayers(2).to(device)
-    # model = SL3InvariantLayersTest(2).to(device)
-    # model = MLP(16).to(device)
+    
+    model = SL3InvariantLayers(5).to(device)
+    # model = SL3InvariantLayersTest(5).to(device)
+    # model = MLP(40).to(device)
 
     train(model, train_loader, test_loader, config, device)
 
