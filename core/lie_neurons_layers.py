@@ -15,7 +15,7 @@ from einops.layers.torch import Rearrange
 sys.path.append('.')
 
 
-EPS = 1e-6
+EPS = 1e-3
 
 
 class LNLinear(nn.Module):
@@ -58,7 +58,19 @@ class LNKillingRelu(nn.Module):
         d_hat = self.HatLayerSl3(d)
         kf_xd = killingform_sl3(x_hat, d_hat)
         kf_dd = killingform_sl3(d_hat, d_hat)
-        x_out = torch.where(kf_xd < 0, x, x - (-kf_xd)/(-kf_dd) * d)
+        # kf_dd_norm = torch.where(
+        # kf_dd < 0, torch.sqrt(-kf_dd)+EPS, torch.sqrt(kf_dd) + EPS)
+        # x_out = torch.where(kf_xd < 0, x, x - (-kf_xd)/(-kf_dd) * d)
+        x_out = torch.where(kf_xd <= 0, x, x - (-kf_xd) * d)
+        # x_out = torch.where(kf_xd < 0, x, torch.zeros_like(x))
+
+        # x_out = x
+        # print("------------------")
+        # print("x", x)
+        # print("kf", kf_xd)
+        # print("x_out", x_out)
+        # print("d", d)
+        # x_out = torch.where(kf_xd < 0, x, x - (-kf_xd) * d)
         x_out = x_out.transpose(2, -1)
 
         return x_out
@@ -152,13 +164,13 @@ class LNLinearAndKillingReluAndPooling(nn.Module):
 
 
 class LNBatchNorm(nn.Module):
-    def __init__(self, num_features, dim):
+    def __init__(self, num_features, dim, affine=False):
         super(LNBatchNorm, self).__init__()
         self.dim = dim
         if dim == 3 or dim == 4:
-            self.bn = nn.BatchNorm1d(num_features)
+            self.bn = nn.BatchNorm1d(num_features, affine=affine)
         elif dim == 5:
-            self.bn = nn.BatchNorm2d(num_features)
+            self.bn = nn.BatchNorm2d(num_features, affine=affine)
 
         self.hat_layer = HatLayerSl3()
 
@@ -168,24 +180,32 @@ class LNBatchNorm(nn.Module):
         '''
 
         x_hat = self.hat_layer(x.transpose(2, -1))
-        killing_forms = killingform_sl3(x_hat, x_hat) + EPS
-        killing_forms = killing_forms.squeeze(-1)
+        kf = killingform_sl3(x_hat, x_hat)
+        # kf = torch.where(kf <= 0, torch.clamp(
+        #     kf, max=-EPS), torch.clamp(kf, min=EPS))
 
-        # killing_forms = compute_killing_form(x, x) + EPS
+        kf = torch.clamp(torch.abs(kf), min=EPS)
+        kf = kf.squeeze(-1)
 
-        kf_bn = self.bn(killing_forms)
-        killing_forms = killing_forms.unsqueeze(2)
+        # kf = compute_killing_form(x, x) + EPS
+
+        kf_bn = self.bn(kf)
+        # kf_bn = torch.clamp(torch.abs(self.bn(kf)), min=EPS)
+
+        kf = kf.unsqueeze(2)
         kf_bn = kf_bn.unsqueeze(2)
-        x = x / killing_forms * kf_bn
+        x = x / kf * kf_bn
 
         return x
 
 
 class LNInvariantPooling(nn.Module):
-    def __init__(self, method='killing'):
+    def __init__(self, in_channel, dir_dim=8, method='learned_killing'):
         super(LNInvariantPooling, self).__init__()
 
         self.hat_layer = HatLayerSl3()
+        self.learned_dir = LNLinearAndKillingRelu(
+            in_channel, dir_dim, share_nonlinearity=True)
         self.method = method
 
     def forward(self, x):
@@ -193,7 +213,10 @@ class LNInvariantPooling(nn.Module):
         x: point features of shape [B, N_feat, K, N_samples, ...]
         '''
         x_hat = self.hat_layer(x.transpose(2, -1))
-        if self.method == 'killing':
+        if self.method == 'learned_killing':
+            d_hat = self.hat_layer(self.learned_dir(x).transpose(2, -1))
+            x_out = killingform_sl3(x_hat, d_hat, feature_wise=True)
+        elif self.method == 'self_killing':
             x_out = killingform_sl3(x_hat, x_hat)
         elif self.method == 'det':
             b, f, n, _, _ = x_hat.shape

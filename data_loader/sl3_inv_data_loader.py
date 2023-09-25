@@ -15,6 +15,7 @@ class sl3InvDataSet(Dataset):
     def __init__(self, data_path, device='cuda'):
         data = np.load(data_path)
         _, num_points = data['x1'].shape
+        _,_,num_conjugate = data['x1_conjugate'].shape
         self.x1 = torch.from_numpy(data['x1']).type(
             'torch.FloatTensor').to(device).reshape(num_points, 1, 8, 1)
         self.x2 = torch.from_numpy(data['x2']).type(
@@ -22,12 +23,11 @@ class sl3InvDataSet(Dataset):
         self.x = torch.cat((self.x1, self.x2), dim=1)
 
         self.x1_conjugate = torch.from_numpy(data['x1_conjugate']).type(
-            'torch.FloatTensor').to(device).reshape(num_points, 1, 8, 1)
+            'torch.FloatTensor').to(device).reshape(num_conjugate, num_points, 1, 8, 1)
         self.x2_conjugate = torch.from_numpy(data['x2_conjugate']).type(
-            'torch.FloatTensor').to(device).reshape(num_points, 1, 8, 1)
+            'torch.FloatTensor').to(device).reshape(num_conjugate, num_points, 1, 8, 1)
         self.x_conjugate = torch.cat(
-            (self.x1_conjugate, self.x2_conjugate), dim=1)
-        self.x = torch.cat((self.x, self.x_conjugate), dim=0)
+            (self.x1_conjugate, self.x2_conjugate), dim=2)
         self.y = torch.from_numpy(data['y']).type(
             'torch.FloatTensor').to(device).reshape(num_points, 1)
 
@@ -41,14 +41,14 @@ class sl3InvDataSet(Dataset):
             idx = idx.tolist()
 
         sample = {'x1': self.x1[idx, :, :, :], 'x2': self.x2[idx, :, :, :], 'x': self.x[idx, :, :, :],
-                  'x1_conjugate': self.x1_conjugate[idx, :, :, :], 'x2_conjugate': self.x2_conjugate[idx, :, :, :],
-                  'x_conjugate': self.x_conjugate[idx, :, :, :], 'y': self.y[idx, :]}
+                  'x1_conjugate': self.x1_conjugate[:,idx, :, :, :], 'x2_conjugate': self.x2_conjugate[:,idx, :, :, :],
+                  'x_conjugate': self.x_conjugate[:,idx, :, :, :], 'y': self.y[idx, :]}
         return sample
 
 
 if __name__ == "__main__":
 
-    DataLoader = sl3InvDataSet("data/sl3_inv_data/sl3_inv_train_data.npz")
+    DataLoader = sl3InvDataSet("data/sl3_inv_data/sl3_inv_100_s_05_train_data.npz")
 
     print(DataLoader.x1.shape)
     print(DataLoader.x2.shape)

@@ -4,6 +4,9 @@ import torch
 sys.path.append('.')
 
 
+from einops import rearrange, repeat
+from einops.layers.torch import Rearrange
+
 class HatLayerSl3(torch.nn.Module):
     def __init__(self):
         super(HatLayerSl3, self).__init__()
@@ -61,10 +64,21 @@ def vee_sl3(M):
     return v
 
 
-def killingform_sl3(x_hat, d_hat):
+def killingform_sl3(x_hat, d_hat, feature_wise=False):
     """
     x: a tensor of arbitrary shape with the last two dimension of size 3*3
     d: a tensor of arbitrary shape with the last two dimension of size 3*3
     """
-    return 6*(x_hat.transpose(-1, -2)*d_hat).sum(dim=(-1, -2))[..., None]  # [B,F,N,1]
+    # print(d_hat.shape)
+    # print(x_hat.shape)
+    
+    if not feature_wise:
+        return 6*(x_hat.transpose(-1, -2)*d_hat).sum(dim=(-1, -2))[..., None]   # [B,F,N,1]
+    else:
+        x_hat = rearrange(x_hat, 'b f n m1 m2 -> b f 1 n m1 m2')
+        d_hat = rearrange(d_hat, 'b d n m1 m2 -> b 1 d n m1 m2')
+        kf = 6*(x_hat.transpose(-1, -2)*d_hat).sum(dim=(-1, -2))
+        kf = rearrange(kf, 'b f d n -> b (f d) n 1')
+        
+        return kf
     # return 6*torch.einsum('...ii', torch.matmul(x_hat,d_hat))[..., None]  # [B,F,N,1] equivalent to the above

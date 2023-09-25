@@ -24,7 +24,7 @@ from data_loader.sl3_inv_data_loader import *
 
 def init_writer(config):
     writer = SummaryWriter(
-        config['log_writer_path']+str(time.localtime()), comment=config['model_description'])
+        config['log_writer_path']+"_"+str(time.localtime()), comment=config['model_description'])
     writer.add_text("train_data_path: ", config['train_data_path'])
     writer.add_text("model_save_path: ", config['model_save_path'])
     writer.add_text("log_writer_path: ", config['log_writer_path'])
@@ -150,6 +150,8 @@ def train(model, train_loader, test_loader, config, device='cpu'):
 
 
 def main():
+    # torch.autograd.set_detect_anomaly(True)
+
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print('Using ', device)
 
@@ -170,6 +172,7 @@ def main():
                              shuffle=config['shuffle'])
     # for i, samples in tqdm(enumerate(train_loader, start=0)):
     model = SL3InvariantLayers(2).to(device)
+    # model = SL3InvariantLayersTest(2).to(device)
     # model = MLP(16).to(device)
 
     train(model, train_loader, test_loader, config, device)
