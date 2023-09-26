@@ -24,8 +24,8 @@ class LNPlatonicSolidClassifier(nn.Module):
         share_nonlinearity = False
         self.ln_fc = LNLinearAndKillingRelu(
             in_channels, feat_dim, share_nonlinearity=share_nonlinearity)
-        self.ln_fc2 = LNLinearAndKillingRelu(feat_dim, feat_dim,share_nonlinearity=share_nonlinearity)
-        self.ln_fc3 = LNLinearAndKillingRelu(feat_dim, feat_dim,share_nonlinearity=share_nonlinearity)
+        self.ln_fc2 = LNLinearAndKillingRelu(feat_dim, feat_dim, share_nonlinearity=share_nonlinearity)
+        self.ln_fc3 = LNLinearAndKillingRelu(feat_dim, feat_dim, share_nonlinearity=share_nonlinearity)
         self.ln_pooling = LNMaxPool(feat_dim, abs_killing_form = False) # [B, F, 8, 1]
         self.ln_inv = LNInvariantPooling(feat_dim, method='self_killing')
         self.fc_final = nn.Linear(feat_dim, 3, bias=False)
@@ -35,8 +35,8 @@ class LNPlatonicSolidClassifier(nn.Module):
         x input of shape [B, F, 8, 1]
         '''
         x = self.ln_fc(x)   # [B, F, 8, N]
-        x = self.ln_fc2(x)  # [B, F, 8, N]
-        x = self.ln_fc3(x)  # [B, F, 8, N]
+        # x = self.ln_fc2(x)  # [B, F, 8, N]
+        # x = self.ln_fc3(x)  # [B, F, 8, N]
         x = self.ln_pooling(x) # [B, F, 8, 1]
         x_inv = self.ln_inv(x).unsqueeze(-1)  # [B, F, 1, 1]
         x_inv = torch.permute(x_inv, (0, 3, 2, 1))  # [B, 1, 1, F]

@@ -4,25 +4,25 @@ test_data_path: "/home/justin/code/LieNeurons/data/sl3_equiv_5_input_data/sl3_eq
 model_description: "SL3EquivariantFunctionFitting"
 
 print_freq: 1
-# model_type: "LN"
-# model_save_path: "/home/justin/code/LieNeurons/weights/0926_platonic_cls_LN"
-# log_writer_path: "/home/justin/code/LieNeurons/logs/0926_platonic_cls_LN"
+model_type: "LN"
+model_save_path: "/home/justin/code/LieNeurons/weights/0926_platonic_cls_LN"
+log_writer_path: "/home/justin/code/LieNeurons/logs/0926_platonic_cls_LN"
 
-model_type: "MLP"
-model_save_path: "/home/justin/code/LieNeurons/weights/0926_platonic_cls_MLP"
-log_writer_path: "/home/justin/code/LieNeurons/logs/0926_platonic_cls_MLP"
+# model_type: "MLP"
+# model_save_path: "/home/justin/code/LieNeurons/weights/0926_platonic_cls_MLP"
+# log_writer_path: "/home/justin/code/LieNeurons/logs/0926_platonic_cls_MLP"
 
 resume_training: false
 resume_model_path: "/home/justin/code/LieNeurons/weights/0921_sl3_equiv_first_try.pth.tar"
 
 num_workers: 1
 
-batch_size: 10
+batch_size: 100
 update_every_batch: 1
-initial_learning_rate: 0.000001
+initial_learning_rate: 0.00001
 learning_rate_decay_rate: 0.0
 weight_decay_rate: 0.00
-num_train: 500
-num_test: 100
+num_train: 500000
+num_test: 1000
 shuffle: True
 

@@ -390,7 +390,9 @@ class PlatonicDataset(Dataset):
     
     def __getitem__(self, index):
         
+        # cls = np.random.choice(['octa', 'icosa', 'tetra'])
         cls = np.random.choice(['octa', 'icosa', 'tetra'])
+
         # cls = 'tetra'
         platonic_solid = self.platonic_solids[cls]
         # print('self.homographis[cls]', self.homographis[cls])

@@ -61,6 +61,30 @@ def test(model, test_loader, criterion, config, device):
 
     return loss_avg, acc_avg
 
+def test_perspective(model, test_loader, criterion, config, device):
+    model.eval()
+    with torch.no_grad():
+        loss_sum = 0.0
+        num_correct = 0
+        for iter, samples in tqdm(enumerate(test_loader, start=0)):
+            
+            x = samples[0].to(device)
+            y = samples[1].to(device)
+
+            x = rearrange(x,'b n f k -> b f k n')
+            output = model(x)
+
+            _, prediction = torch.max(output,1)
+            num_correct += (prediction==y).sum().item()
+            
+            loss = criterion(output, y)
+            loss_sum += loss.item()
+
+        print(iter)
+        loss_avg = loss_sum/config['num_test']*config['batch_size']
+        acc_avg = num_correct/config['num_test']
+
+    return loss_avg, acc_avg
 
 def train(model, train_loader, test_loader, config, device='cpu'):
 
