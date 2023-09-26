@@ -83,10 +83,10 @@ def main():
     test_set = sl3InvDataSet5Input(config['test_data_path'], device=device)
     test_loader = DataLoader(dataset=test_set, batch_size=config['batch_size'],
                              shuffle=config['shuffle'])
-    # for i, samples in tqdm(enumerate(train_loader, start=0)):
-    # model = SL3InvariantLayers(5).to(device)
+    
+    model = SL3InvariantLayers(5).to(device)
     # model = SL3InvariantLayersTest(2).to(device)
-    model = MLP(40).to(device)
+    # model = MLP(40).to(device)
     checkpoint = torch.load(config['model_path'])
     model.load_state_dict(checkpoint['model_state_dict'])
 
