@@ -1,7 +1,10 @@
 import numpy as np
 import torch
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset, DataLoader, IterableDataset
 import matplotlib.pyplot as plt
+
+from scipy.linalg import logm
+from core.lie_alg_util import *
 
 def construct_platonic_solids():
     platonic_solids = dict()
@@ -220,7 +223,7 @@ def compute_neighboring_faces_for_each_ordered_edge(platonic_solid):
         for neighbor in neighboring_vertice_for_each_vertice[vertice]:
             edge = (vertice, neighbor)
             neighboring_faces_for_each_ordered_edge[edge] = dict()
-            print('edge ...........', edge)
+            # print('edge ...........', edge)
             for face in platonic_solid['faces']:
                 # print('face', face)
                 if vertice in face and neighbor in face:
@@ -237,10 +240,10 @@ def compute_neighboring_faces_for_each_ordered_edge(platonic_solid):
                     # print(vector)
                     if np.dot(cross_product, vector) > 0:
                         neighboring_faces_for_each_ordered_edge[edge]['left'] = face
-                        print('left', face)
+                        # print('left', face)
                     else:
                         neighboring_faces_for_each_ordered_edge[edge]['right'] = face
-                        print('right', face)
+                        # print('right', face)
 
 
     # ### Now we need to order the neighboring faces for each edge
@@ -311,11 +314,11 @@ def compute_homography_matrix_for_each_ordered_edge(platonic_solid):
         p8 = p1 + p2 - p4
 
         ### projection of points to the unit depth plane
-        print("p1", p1)
+        # print("p1", p1)
         p1 = p1/p1[2]
 
-        print("p1", p1)
-        print('...........')
+        # print("p1", p1)
+        # print('...........')
         p2 = p2/p2[2]
         p3 = p3/p3[2]
         p4 = p4/p4[2]
@@ -340,12 +343,28 @@ def compute_homography_matrix_for_each_ordered_edge(platonic_solid):
 
     return homography_matrix_for_each_ordered_edge, projected_points
 
+def compute_sl3_from_homography_matrices(homographis):
+    N, F, _, _ = np.shape(homographis)
+    sl3 = np.zeros((N, F, 3, 3))
+    for n in range(N):
+        for f in range(F):
+            det = np.linalg.det(homographis[n, f,:,:])
+            if det < 0: 
+                scale = -(-det)**(-1/3)
+            elif det > 0:
+                scale = det**(-1/3)
+            else:
+                scale = 1e-6
+            
+            sl3[n, f,:,:] = logm(homographis[n, f,:,:]*scale)
+            # print(np.trace(sl3[n, f,:,:]))
+    return sl3
 
 ### Specify the location of the platonic solid and the camera. 
 class PlatonicDataset(Dataset):
-    def __init__(self) -> None:
+    def __init__(self, data_set_size) -> None:
         super().__init__()
-
+        self.len = data_set_size
         self.n_sample_per_item = 12
 
         self.platonic_solids = construct_platonic_solids()
@@ -358,12 +377,41 @@ class PlatonicDataset(Dataset):
             self.platonic_solids[platonic_solid]['vertices'] = self.platonic_solids[platonic_solid]['vertices'] + center
 
         self.homographis = dict()
+        self.sl3 = dict()
         self.projected_points = dict()
         for platonic_solid in ['octa', 'icosa', 'tetra']:  #'octa', 'icosa', 'tetra'
             self.homographis[platonic_solid], self.projected_points[platonic_solid] = compute_homography_matrix_for_each_ordered_edge(self.platonic_solids[platonic_solid])
+            self.sl3[platonic_solid] = compute_sl3_from_homography_matrices(np.array(list(self.homographis[platonic_solid].values())))
 
-        # self.visualize('icosa')
+        # self.visualize('octa')
 
+    def __len__(self):
+        return self.len
+    
+    def __getitem__(self, index):
+        
+        cls = np.random.choice(['octa', 'icosa', 'tetra'])
+        # cls = 'tetra'
+        platonic_solid = self.platonic_solids[cls]
+        # print('self.homographis[cls]', self.homographis[cls])
+        # homographies = list(self.homographis[cls].values())
+
+        # homographies = np.array(homographies)
+        sl3 = self.sl3[cls]
+        
+        # print(homographies)   # (12(n), 3(number of h), 3, 3)
+        ### sample self.n_sample_per_item homographies from the homographies of the platonic solid
+        ### each homography is a list of three homography matrices
+        ### each homography matrix maps one face to another face
+        ### the order of the two faces matters.
+
+        sl3_idx = np.random.choice(list(range(sl3.shape[0])), size=self.n_sample_per_item)
+        sl3_sampled = sl3[sl3_idx]
+        # print(sl3_sampled.shape)   # (12(n), F=3(number of h), 3, 3)
+        cls_int = {'octa':0, 'icosa':1, 'tetra':2}[cls]
+        sl3_sampled_vee = vee_sl3(torch.from_numpy(sl3_sampled).type('torch.FloatTensor'))
+        return sl3_sampled_vee, torch.tensor(cls_int, dtype=torch.int8).type(torch.LongTensor)
+    
     def visualize(self, shape='tetra'):
         octa = self.platonic_solids[shape]
 
@@ -411,28 +459,10 @@ class PlatonicDataset(Dataset):
         plt.plot(pts_homo[0,1], pts_homo[1,1], 'gD', markersize=20, markerfacecolor='none')
         plt.plot(pts_homo[0,2], pts_homo[1,2], 'bD', markersize=20, markerfacecolor='none')
 
-    def __getitem__(self, index):
-        
-        cls = np.random.choice(['octa', 'icosa', 'tetra'])
-        # cls = 'tetra'
-        platonic_solid = self.platonic_solids[cls]
-        # print('self.homographis[cls]', self.homographis[cls])
-        homographies = list(self.homographis[cls].values())
-
-        homographies = np.array(homographies)
-        # print(homographies)   # (12(n), 3(number of h), 3, 3)
-        ### sample self.n_sample_per_item homographies from the homographies of the platonic solid
-        ### each homography is a list of three homography matrices
-        ### each homography matrix maps one face to another face
-        ### the order of the two faces matters.
-
-        homographies_idx = np.random.choice(list(range(homographies.shape[0])), size=self.n_sample_per_item)
-        homographies_sampled = homographies[homographies_idx]
-        # print(homographies_sampled.shape)   # (12(n), F=3(number of h), 3, 3)
-
-        return homographies_sampled, cls
+    
     
 if __name__ == '__main__':
-    platonic_dataset = PlatonicDataset()
+    platonic_dataset = PlatonicDataset(device='cpu')
     platonic_dataset.__getitem__(0)
+    
     plt.show()

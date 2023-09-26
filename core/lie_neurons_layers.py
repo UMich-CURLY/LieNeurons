@@ -164,13 +164,13 @@ class LNLinearAndKillingReluAndPooling(nn.Module):
 
 
 class LNBatchNorm(nn.Module):
-    def __init__(self, num_features, dim, affine=False):
+    def __init__(self, num_features, dim, affine=False, momentum=0.1):
         super(LNBatchNorm, self).__init__()
         self.dim = dim
         if dim == 3 or dim == 4:
-            self.bn = nn.BatchNorm1d(num_features, affine=affine)
+            self.bn = nn.BatchNorm1d(num_features, affine=affine, momentum=momentum)
         elif dim == 5:
-            self.bn = nn.BatchNorm2d(num_features, affine=affine)
+            self.bn = nn.BatchNorm2d(num_features, affine=affine, momentum=momentum)
 
         self.hat_layer = HatLayerSl3()
 
@@ -181,17 +181,20 @@ class LNBatchNorm(nn.Module):
 
         x_hat = self.hat_layer(x.transpose(2, -1))
         kf = killingform_sl3(x_hat, x_hat)
-        # kf = torch.where(kf <= 0, torch.clamp(
-        #     kf, max=-EPS), torch.clamp(kf, min=EPS))
+        # b, f, n, _, _ = x_hat.shape
+        # kf = rearrange(torch.det(
+        #         rearrange(x_hat, 'b f n m1 m2 -> (b f n) m1 m2')), '(b f n) -> b f n 1', b=b, f=f, n=n)
+        kf = torch.where(kf <= 0, torch.clamp(
+            kf, max=-EPS), torch.clamp(kf, min=EPS))
 
-        kf = torch.clamp(torch.abs(kf), min=EPS)
+        # kf = torch.clamp(torch.abs(kf), min=EPS)
         kf = kf.squeeze(-1)
 
         # kf = compute_killing_form(x, x) + EPS
-
+        
         kf_bn = self.bn(kf)
         # kf_bn = torch.clamp(torch.abs(self.bn(kf)), min=EPS)
-
+        
         kf = kf.unsqueeze(2)
         kf_bn = kf_bn.unsqueeze(2)
         x = x / kf * kf_bn

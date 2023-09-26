@@ -25,7 +25,7 @@ class SL3EquivariantLayers(nn.Module):
         share_nonlinearity = False
         self.ln_fc = LNLinearAndKillingRelu(
             in_channels, feat_dim, share_nonlinearity=share_nonlinearity)
-        self.ln_norm = LNBatchNorm(feat_dim, dim=3)
+        self.ln_norm = LNBatchNorm(feat_dim, dim=4, affine=False, momentum=0.1)
         self.ln_fc2 = LNLinearAndKillingRelu(feat_dim, feat_dim,share_nonlinearity=share_nonlinearity)
         self.ln_fc3 = LNLinearAndKillingRelu(feat_dim, feat_dim,share_nonlinearity=share_nonlinearity)
         

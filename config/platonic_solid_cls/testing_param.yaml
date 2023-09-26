@@ -1,0 +1,17 @@
+test_data_path: "/home/justin/code/LieNeurons/data/sl3_equiv_5_input_data/sl3_equiv_100_s_05_test_data.npz"
+
+# logger
+model_description: "SL3EquivariantFunctionFitting"
+
+print_freq: 100
+
+# model_type: "LN"
+# model_path: "/home/justin/code/LieNeurons/weights/0925_exp_sl3_equiv_5_input_LN_256_no_share_nonlin_train_100_lr_0.000001_best_test_loss_acc.pt"
+
+model_type: "MLP"
+model_path: "/home/justin/code/LieNeurons/weights/0925_exp_sl3_equiv_5_input_MLP_256_no_share_nonlin_train_100_lr_0.00001_best_test_loss_acc.pt"
+
+
+batch_size: 10
+shuffle: False
+
