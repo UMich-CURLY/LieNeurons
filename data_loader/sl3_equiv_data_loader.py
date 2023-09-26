@@ -84,5 +84,5 @@ if __name__ == "__main__":
     for i, samples in tqdm(enumerate(DataLoader, start=0)):
         input_data = samples['x']
         y = samples['y']
-        # print(y)
+        print(y)
         # print(input_data.shape)

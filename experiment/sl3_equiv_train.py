@@ -173,9 +173,11 @@ def main():
     test_loader = DataLoader(dataset=test_set, batch_size=config['batch_size'],
                              shuffle=config['shuffle'])
     
-    model = SL3EquivariantLayers(5).to(device)
+    if config['model_type'] == "LN":
+        model = SL3EquivariantLayers(5).to(device)
+    elif config['model_type'] == "MLP":
+        model = MLP(40).to(device)
     # model = SL3InvariantLayersTest(5).to(device)
-    # model = MLP(40).to(device)
 
     train(model, train_loader, test_loader, config, device)
 

@@ -85,9 +85,12 @@ def main():
     test_loader = DataLoader(dataset=test_set, batch_size=config['batch_size'],
                              shuffle=config['shuffle'])
     
-    model = SL3InvariantLayers(5).to(device)
-    # model = SL3InvariantLayersTest(2).to(device)
-    # model = MLP(40).to(device)
+
+    if config['model_type'] == "LN":
+        model = SL3InvariantLayers(5).to(device)
+    elif config['model_type'] == "MLP":
+        model = MLP(40).to(device)
+        
     checkpoint = torch.load(config['model_path'])
     model.load_state_dict(checkpoint['model_state_dict'])
 

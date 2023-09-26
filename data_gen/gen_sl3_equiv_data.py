@@ -14,7 +14,10 @@ from core.lie_neurons_layers import *
 
 
 def equivariant_function(x1, x2, x3, x4, x5):
-    return x1@x2@x3@x4@x5 + x1@x1@x1@x1 + x5@x4@x3 + x3@x5@x1 + x1@x2 + x3@x4 + x5@x2
+    # return x1@x2@x3@x4@x5 + x1@x1@x1@x1 + x5@x4@x3 + x3@x5@x1 + x1@x2 + x3@x4 + x5@x2
+    return x1@x2@torch.linalg.matrix_exp(x3)@x4@x5 + x1@torch.linalg.matrix_exp(x1)@x1@x1 \
+        + x5@x4@x3 + torch.linalg.matrix_exp(x3)@x5@x1 + x1@x2 + x3@x4 + x5@x2
+
 
 
 if __name__ == "__main__":
@@ -200,11 +203,8 @@ if __name__ == "__main__":
     test_data['x4_conjugate'] = conj_x4.numpy().reshape(8, num_testing, num_conjugate)
     test_data['x5_conjugate'] = conj_x5.numpy().reshape(8, num_testing, num_conjugate)
     test_data['y'] = equ_output.numpy().reshape(1, num_testing, 8)
-    print(H.shape)
     test_data['H'] = H.numpy().reshape(num_conjugate, num_testing, 3, 3)
     
-    print("H: ", H[0,0,:,:])
-    print("H: ", H[1,0,:,:])
 
     np.savez(data_saved_path + data_name + "_test_data.npz", **test_data)
 
