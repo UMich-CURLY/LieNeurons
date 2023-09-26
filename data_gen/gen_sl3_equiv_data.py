@@ -13,17 +13,13 @@ from core.lie_group_util import *
 from core.lie_neurons_layers import *
 
 
-def invariant_function(x1, x2, x3, x4, x5):
-    return torch.sin(torch.trace(x1@x2@x3))+torch.cos(torch.trace(x3@x4@x5))\
-        -torch.pow(torch.trace(x5@x1), 6)/2.0+torch.det(x3@x2)+torch.exp(torch.trace(x4@x1))\
-        +torch.trace(x1@x2@x3@x4@x5)
-    # return torch.sin(torch.trace(x1@x1))+torch.cos(torch.trace(x2@x2))\
-    #     -torch.pow(torch.trace(x2@x2), 3)/2.0+torch.det(x1@x2)+torch.exp(torch.trace(x1@x1))
+def equivariant_function(x1, x2, x3, x4, x5):
+    return x1@x2@x3@x4@x5 + x1@x1@x1@x1 + x5@x4@x3 + x3@x5@x1 + x1@x2 + x3@x4 + x5@x2
 
 
 if __name__ == "__main__":
-    data_saved_path = "data/sl3_inv_5_input_data/"
-    data_name = "sl3_inv_100_s_05"
+    data_saved_path = "data/sl3_equiv_5_input_data/"
+    data_name = "sl3_equiv_100_s_05"
     num_training = 100
     num_testing = 100
     num_conjugate = 500
@@ -49,6 +45,7 @@ if __name__ == "__main__":
     h = torch.Tensor(np.random.uniform(-rnd_scale,
                      rnd_scale, (num_conjugate, num_training, 8)))
     H = torch.linalg.matrix_exp(hat_layer(h))
+
     # conjugate x1
     x1_hat = hat_layer(x1.transpose(2, -1))
     conj_x1_hat = torch.matmul(H, torch.matmul(x1_hat, torch.inverse(H)))
@@ -76,20 +73,31 @@ if __name__ == "__main__":
 
  
 
-    inv_output = torch.zeros((1, num_training, 1))
+    equ_output = torch.zeros((1, num_training, 8))
     # compute invariant function
     for n in range(num_training):
-        inv_output[0, n, 0] = invariant_function(
+        out = equivariant_function(
             x1_hat[0, 0, n, :, :], x2_hat[0, 0, n, :, :],x3_hat[0, 0, n, :, :],\
                 x4_hat[0, 0, n, :, :],x5_hat[0, 0, n, :, :])
+        out_vec = vee_sl3(out)
+        
+        equ_output[0, n, :] = out_vec
 
         # print("-------------------------------")
-        # print(inv_output[0,n,0])
-        # for i in range(num_conjugate):
-        #     print(invariant_function(conj_x1_hat[0, i, n, :, :],conj_x2_hat[0, i, n, :, :],\
-        #                              conj_x3_hat[0, i, n, :, :],conj_x4_hat[0, i, n, :, :],\
-        #                              conj_x5_hat[0, i, n, :, :]))
+        # print(out)
+        for i in range(num_conjugate):
+            conj_out = equivariant_function(conj_x1_hat[0, i, n, :, :],conj_x2_hat[0, i, n, :, :],\
+                                     conj_x3_hat[0, i, n, :, :],conj_x4_hat[0, i, n, :, :],\
+                                     conj_x5_hat[0, i, n, :, :])
+            H_i = H[i,n,:,:]
+            out_then_conj = torch.matmul(H_i, torch.matmul(out, torch.inverse(H_i)))
 
+            # print(conj_out - out_then_conj)
+            test_result = torch.allclose(conj_out, out_then_conj, rtol=1e-4, atol=1e-4)
+            # print(test_result)
+            if(not test_result):
+                print("This is not equivariant")
+    
     train_data['x1'] = x1.numpy().reshape(8, num_training)
     train_data['x2'] = x2.numpy().reshape(8, num_training)
     train_data['x3'] = x3.numpy().reshape(8, num_training)
@@ -100,7 +108,8 @@ if __name__ == "__main__":
     train_data['x3_conjugate'] = conj_x3.numpy().reshape(8, num_training, num_conjugate)
     train_data['x4_conjugate'] = conj_x4.numpy().reshape(8, num_training, num_conjugate)
     train_data['x5_conjugate'] = conj_x5.numpy().reshape(8, num_training, num_conjugate)
-    train_data['y'] = inv_output.numpy().reshape(1, num_training)
+    train_data['y'] = equ_output.numpy().reshape(1, num_training, 8)
+    train_data['H'] = H.numpy().reshape(num_conjugate, num_training, 3, 3)
 
     np.savez(data_saved_path + data_name + "_train_data.npz", **train_data)
 
@@ -148,12 +157,30 @@ if __name__ == "__main__":
     conj_x5_hat = torch.matmul(H, torch.matmul(x5_hat, torch.inverse(H)))
     conj_x5 = rearrange(vee_sl3(conj_x5_hat), 'b c t l -> b l t c')
 
-    inv_output = torch.zeros((1, num_testing, 1))
+    equ_output = torch.zeros((1, num_testing, 8))
     # compute invariant function
     for n in range(num_testing):
-        inv_output[0, n, 0] = invariant_function(
+        out = equivariant_function(
             x1_hat[0, 0, n, :, :], x2_hat[0, 0, n, :, :],x3_hat[0, 0, n, :, :],\
                 x4_hat[0, 0, n, :, :],x5_hat[0, 0, n, :, :])
+        out_vec = vee_sl3(out)
+        
+        equ_output[0, n, :] = out_vec
+
+        # print("-------------------------------")
+        # print(out)
+        for i in range(num_conjugate):
+            conj_out = equivariant_function(conj_x1_hat[0, i, n, :, :],conj_x2_hat[0, i, n, :, :],\
+                                     conj_x3_hat[0, i, n, :, :],conj_x4_hat[0, i, n, :, :],\
+                                     conj_x5_hat[0, i, n, :, :])
+            H_i = H[i,n,:,:]
+            out_then_conj = torch.matmul(H_i, torch.matmul(out, torch.inverse(H_i)))
+
+            # print(conj_out - out_then_conj)
+            test_result = torch.allclose(conj_out, out_then_conj, rtol=1e-4, atol=1e-4)
+            # print(test_result)
+            if(not test_result):
+                print("This is not equivariant")
         
         # print("-------------------------------")
         # print(inv_output[0,n,0])
@@ -172,7 +199,12 @@ if __name__ == "__main__":
     test_data['x3_conjugate'] = conj_x3.numpy().reshape(8, num_testing, num_conjugate)
     test_data['x4_conjugate'] = conj_x4.numpy().reshape(8, num_testing, num_conjugate)
     test_data['x5_conjugate'] = conj_x5.numpy().reshape(8, num_testing, num_conjugate)
-    test_data['y'] = inv_output.numpy().reshape(1, num_testing)
+    test_data['y'] = equ_output.numpy().reshape(1, num_testing, 8)
+    print(H.shape)
+    test_data['H'] = H.numpy().reshape(num_conjugate, num_testing, 3, 3)
+    
+    print("H: ", H[0,0,:,:])
+    print("H: ", H[1,0,:,:])
 
     np.savez(data_saved_path + data_name + "_test_data.npz", **test_data)
 

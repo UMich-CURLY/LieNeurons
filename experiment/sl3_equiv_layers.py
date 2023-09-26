@@ -18,24 +18,22 @@ from core.lie_alg_util import *
 from core.lie_neurons_layers import *
 
 
-class SL3InvariantLayers(nn.Module):
+class SL3EquivariantLayers(nn.Module):
     def __init__(self, in_channels):
-        super(SL3InvariantLayers, self).__init__()
+        super(SL3EquivariantLayers, self).__init__()
         feat_dim = 256
-        inv_dir_dim = 1
         share_nonlinearity = False
         self.ln_fc = LNLinearAndKillingRelu(
             in_channels, feat_dim, share_nonlinearity=share_nonlinearity)
         self.ln_norm = LNBatchNorm(feat_dim, dim=3)
         self.ln_fc2 = LNLinearAndKillingRelu(feat_dim, feat_dim,share_nonlinearity=share_nonlinearity)
         self.ln_fc3 = LNLinearAndKillingRelu(feat_dim, feat_dim,share_nonlinearity=share_nonlinearity)
-        self.ln_inv = LNInvariantPooling(
-            feat_dim, dir_dim=inv_dir_dim, method='self_killing')
+        
         self.fc = nn.Linear(feat_dim, feat_dim)
         self.relu = nn.ReLU()
         self.fc2 = nn.Linear(feat_dim, feat_dim)
         self.fc3 = nn.Linear(feat_dim, feat_dim)
-        self.fc_final = nn.Linear(inv_dir_dim*feat_dim, 1, bias=False)
+        self.fc_final = nn.Linear(feat_dim, 1, bias=False)
 
     def forward(self, x):
         '''
@@ -45,18 +43,10 @@ class SL3InvariantLayers(nn.Module):
         # x = self.ln_norm(x)  # [B, F, 8, 1]
         x = self.ln_fc2(x)  # [B, F, 8, 1]
         # x = self.ln_norm(x)  # [B, F, 8, 1]
-        x = self.ln_fc3(x)
-        x_inv = self.ln_inv(x)  # [B, F, 1, 1]
-        x_inv = torch.permute(x_inv, (0, 3, 2, 1))
+        x = self.ln_fc3(x)  # [B, F, 8, 1]
 
-        # [B, 1, 1, feat_dim]
-        # x_inv = self.fc(x_inv)
-        # x_inv = self.relu(x_inv)    # [B, 1, 1, feat_dim]
-        # x_inv = self.fc2(x_inv)
-        # x_inv = self.relu(x_inv)
-        # x_inv = self.fc3(x_inv)
-        # x_inv = self.relu(x_inv)
-        x_out = torch.reshape(self.fc_final(x_inv), (-1, 1))     # [B, 1]
+        x = torch.permute(x, (0, 3, 2, 1))  # [B, 1, 8, F]
+        x_out = rearrange(self.fc_final(x), 'b 1 k 1 -> b k')   # [B, 8]
 
         return x_out
 
@@ -149,13 +139,13 @@ class MLP(nn.Module):
         self.relu = nn.ReLU()
         self.fc2 = nn.Linear(feat_dim, feat_dim)
         self.fc3 = nn.Linear(feat_dim, feat_dim)
-        self.fc_final = nn.Linear(feat_dim, 1)
+        self.fc_final = nn.Linear(feat_dim, 8)
 
     def forward(self, x):
         '''
         x input of shape [B, F, 8, 1]
         '''
-        B, _, _, _ = x.shape
+        B, F, _, _ = x.shape
         x = torch.reshape(x, (B, -1))
         x = self.fc(x)
         x = self.relu(x)
@@ -163,6 +153,6 @@ class MLP(nn.Module):
         x = self.relu(x)
         x = self.fc3(x)
         x = self.relu(x)
-        x_out = torch.reshape(self.fc_final(x), (-1, 1))     # [B, 1]
+        x_out = torch.reshape(self.fc_final(x), (B, 8))     # [B, 8]
 
         return x_out

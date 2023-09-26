@@ -9,10 +9,5 @@ model_path: "/home/justin/code/LieNeurons/weights/0925_sl3_inv_5_input_LN_256_no
 num_workers: 1
 
 batch_size: 10
-update_every_batch: 1
-initial_learning_rate: 0.00003
-learning_rate_decay_rate: 0.0
-weight_decay_rate: 0.00
-num_epochs: 500
 shuffle: True
 

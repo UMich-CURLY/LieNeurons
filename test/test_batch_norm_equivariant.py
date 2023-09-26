@@ -7,17 +7,17 @@ import torch
 from core.lie_group_util import *
 from core.lie_neurons_layers import *
 from core.lie_alg_util import *
-
+from experiment.sl3_equiv_layers import *
 
 if __name__ == "__main__":
     print("testing equivariant linear layer")
 
     # test equivariant linear layer
-    num_points = 100
+    num_points = 1
     num_features = 10
     out_features = 3
     batch_size = 20
-    rnd_scale = 1
+    rnd_scale = 0.5
 
     hat_layer = HatLayerSl3()
 
@@ -28,8 +28,10 @@ if __name__ == "__main__":
     # SL(3) transformation
     Y = torch.linalg.matrix_exp(hat_layer(y))
 
-    model = LNLinearAndKillingReluAndPooling(
-        num_features, out_features, share_nonlinearity=True, use_batch_norm=True, dim=4)
+    # model = LNLinearAndKillingReluAndPooling(
+    #     num_features, out_features, share_nonlinearity=True, use_batch_norm=True, dim=4)
+
+    model = SL3EquivariantLayers(num_features)
 
     x_hat = hat_layer(x.transpose(2, -1))
     new_x_hat = torch.matmul(Y, torch.matmul(x_hat, torch.inverse(Y)))
@@ -40,16 +42,16 @@ if __name__ == "__main__":
         out_x = model(x)
         out_new_x = model(new_x)
 
-    out_x_hat = hat_layer(out_x.transpose(2, -1))
+    out_x_hat = hat_layer(out_x)
     out_x_hat_conj = torch.matmul(Y, torch.matmul(out_x_hat, torch.inverse(Y)))
-    out_x_conj = vee_sl3(out_x_hat_conj).transpose(2, -1)
+    out_x_conj = vee_sl3(out_x_hat_conj)
 
     test_result = torch.allclose(
         out_new_x, out_x_conj, rtol=1e-4, atol=1e-4)
 
-    # print("out x[0,0,:]", out_x[0, 0, :])
-    # print("out x conj[0,0,:]: ", out_x_conj[0, 0, :])
-    # print("out new x[0,0,:]: ", out_new_x[0, 0, :])
-    # print("differences: ", out_x_conj[0, 0, :] - out_new_x[0, 0, :])
+    print("out x[0,0,:]", out_x[ 0, :])
+    print("out x conj[0,0,:]: ", out_x_conj[0, :])
+    print("out new x[0,0,:]: ", out_new_x[0, :])
+    print("differences: ", out_x_conj[0, :] - out_new_x[ 0, :])
 
-    # print("The network is equivariant: ", test_result)
+    print("The network is equivariant: ", test_result)

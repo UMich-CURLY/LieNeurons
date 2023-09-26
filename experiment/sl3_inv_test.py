@@ -52,13 +52,14 @@ def test_invariance(model, test_loader, criterion, config, device):
 
             output_x = model(x)
             # print(output_x)
+            # print(x_conj.shape)
             for j in range(x_conj.shape[1]):
                 x_conj_j = x_conj[:, j, :, :, :]
                 output_conj = model(x_conj_j)
                 diff_output = output_x - output_conj
                 loss = criterion(output_conj, y)
                 loss_sum += loss.item()
-                diff_output_sum += torch.sum(diff_output)
+                diff_output_sum += torch.sum(torch.abs(diff_output))
                 # print(output_conj)
 
         loss_avg = loss_sum/len(test_loader)/x_conj.shape[1]
