@@ -6,12 +6,16 @@ model_description: "SL3EquivariantFunctionFitting"
 print_freq: 100
 
 # model_type: "LN"
-# model_path: "/home/justin/code/LieNeurons/weights/0925_exp_sl3_equiv_5_input_LN_256_no_share_nonlin_train_100_lr_0.000001_best_test_loss_acc.pt"
+# model_path: "/home/justin/code/LieNeurons/weights/0926_platonic_cls_LN_best_test_loss_good.pt"
 
 model_type: "MLP"
-model_path: "/home/justin/code/LieNeurons/weights/0925_exp_sl3_equiv_5_input_MLP_256_no_share_nonlin_train_100_lr_0.00001_best_test_loss_acc.pt"
+model_path: "/home/justin/code/LieNeurons/weights/0926_platonic_cls_MLP_best_test_loss_good.pt"
 
 
-batch_size: 10
+batch_size: 100
 shuffle: False
 
+num_test: 100
+
+num_rotations: 500
+rotation_factor: 0.174533 # 10 degrees

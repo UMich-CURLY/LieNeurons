@@ -55,7 +55,6 @@ def test(model, test_loader, criterion, config, device):
             loss = criterion(output, y)
             loss_sum += loss.item()
 
-        print(iter)
         loss_avg = loss_sum/config['num_test']*config['batch_size']
         acc_avg = num_correct/config['num_test']
 
@@ -144,7 +143,7 @@ def train(model, train_loader, test_loader, config, device='cpu'):
             torch.save(state, config['model_save_path'] +
                        '_best_test_loss.pt')
             
-        if test_acc < best_acc:
+        if test_acc > best_acc:
             best_acc = test_acc
 
             state = {'iter': iter,
