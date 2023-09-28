@@ -30,6 +30,7 @@ def test_perspective(model, test_loader, criterion, config, device):
     with torch.no_grad():
         loss_sum = 0.0
         num_correct = 0
+        num_correct_non_conj = 0
         for iter, samples in tqdm(enumerate(test_loader, start=0)):
             
             x = samples[0].to(device)
@@ -39,6 +40,8 @@ def test_perspective(model, test_loader, criterion, config, device):
             x = rearrange(x,'b n f k -> b f k n')
 
             output = model(x)
+            _, prediction_non_conj = torch.max(output,1)
+            num_correct_non_conj += (prediction_non_conj==y).sum().item()
             for r in range(config['num_rotations']):
                 cur_rot = rots[r,:,:]
                 x_rot_hat = torch.matmul(cur_rot, torch.matmul(x_hat, torch.inverse(cur_rot)))
@@ -48,13 +51,13 @@ def test_perspective(model, test_loader, criterion, config, device):
                 _, prediction = torch.max(output_rot,1)
                 num_correct += (prediction==y).sum().item()
             
-                loss = criterion(output, y)
+                loss = criterion(output_rot, y)
                 loss_sum += loss.item()
 
         loss_avg = loss_sum/config['num_test']*config['batch_size']/config['num_rotations']
         acc_avg = num_correct/config['num_test']/config['num_rotations']
-
-    return loss_avg, acc_avg
+        acc_avg_non_conj = num_correct_non_conj/config['num_test']
+    return loss_avg, acc_avg, acc_avg_non_conj
 
 def random_sample_rotations(num_rotation, rotation_factor: float = 1.0, device='cpu') -> np.ndarray:
     r = np.zeros((num_rotation, 3, 3))
@@ -94,9 +97,10 @@ def main():
     model.load_state_dict(checkpoint['model_state_dict'])
 
     criterion = nn.CrossEntropyLoss().to(device)
-    test_loss, test_acc = test_perspective(model, test_loader, criterion, config, device)
+    test_loss, test_acc, test_acc_non_conj = test_perspective(model, test_loader, criterion, config, device)
     print("equivariant test loss: ", test_loss)
     print("equivariant test acc: ", test_acc)
+    print("test without conjugate acc: ", test_acc_non_conj)
 
 if __name__ == "__main__":
     main()

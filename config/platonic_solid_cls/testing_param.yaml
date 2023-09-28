@@ -5,11 +5,11 @@ model_description: "SL3EquivariantFunctionFitting"
 
 print_freq: 100
 
-# model_type: "LN"
-# model_path: "/home/justin/code/LieNeurons/weights/0926_platonic_cls_LN_best_test_loss_good.pt"
+model_type: "LN"
+model_path: "/home/justin/code/LieNeurons/weights/0926_platonic_cls_LN_best_test_loss_good.pt"
 
-model_type: "MLP"
-model_path: "/home/justin/code/LieNeurons/weights/0926_platonic_cls_MLP_best_test_loss_good.pt"
+# model_type: "MLP"
+# model_path: "/home/justin/code/LieNeurons/weights/0926_platonic_cls_MLP_best_test_loss_good.pt"
 
 
 batch_size: 100

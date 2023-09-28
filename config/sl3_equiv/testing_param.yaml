@@ -1,17 +1,17 @@
-test_data_path: "/home/justin/code/LieNeurons/data/sl3_equiv_5_input_data/sl3_equiv_100_s_05_test_data.npz"
+test_data_path: "/home/justin/code/LieNeurons/data/sl3_equiv_lie_bracket_data/sl3_equiv_10000_lie_bracket_test_data.npz"
 
 # logger
 model_description: "SL3EquivariantFunctionFitting"
 
 print_freq: 100
 
-# model_type: "LN"
-# model_path: "/home/justin/code/LieNeurons/weights/0925_exp_sl3_equiv_5_input_LN_256_no_share_nonlin_train_100_lr_0.000001_best_test_loss_acc.pt"
+model_type: "LN"
+model_path: "/home/justin/code/LieNeurons/weights/0926_exp_sl3_equiv_lie_bracket_LN_256_no_share_nonlin_train_10000_lr_0.000003_best_test_loss_acc.pt"
 
-model_type: "MLP"
-model_path: "/home/justin/code/LieNeurons/weights/0925_exp_sl3_equiv_5_input_MLP_256_no_share_nonlin_train_100_lr_0.00001_best_test_loss_acc.pt"
+# model_type: "MLP"
+# model_path: "/home/justin/code/LieNeurons/weights/0926_exp_sl3_equiv_lie_bracket_MLP_256_no_share_nonlin_train_10000_lr_0.00001_best_test_loss_acc.pt"
 
 
-batch_size: 10
+batch_size: 100
 shuffle: False
 

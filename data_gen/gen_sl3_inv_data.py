@@ -10,16 +10,17 @@ from core.lie_neurons_layers import *
 
 
 def invariant_function(x1, x2):
-    return torch.sin(torch.trace(x1@x1))+torch.cos(torch.trace(x2@x2))-torch.pow(torch.trace(x2@x2), 3)/2.0+torch.det(x1@x2)+torch.exp(torch.trace(x1@x1))
+    return torch.sin(torch.trace(x1@x1))+torch.cos(torch.trace(x2@x2))\
+        -torch.pow(torch.trace(x2@x2), 3)/2.0+torch.det(x1@x2)+torch.exp(torch.trace(x1@x1))
     # return torch.sin(torch.trace(x1@x2))
     # return torch.sin(torch.trace(x1@x1))-torch.pow(torch.trace(x2@x2), 3)/2.0
 
 
 if __name__ == "__main__":
     data_saved_path = "data/sl3_inv_data/"
-    data_name = "sl3_inv_100000_s_05"
-    num_training = 100000
-    num_testing = 100000
+    data_name = "sl3_inv_10000_s_05"
+    num_training = 10000
+    num_testing = 10000
     num_conjugate = 500
     rnd_scale = 0.5
 
@@ -40,11 +41,12 @@ if __name__ == "__main__":
     # conjugate x1
     x1_hat = hat_layer(x1.transpose(2, -1))
     conj_x1_hat = torch.matmul(H, torch.matmul(x1_hat, torch.inverse(H)))
-    conj_x1 = vee_sl3(conj_x1_hat).transpose(2, -1)
+    conj_x1 = rearrange(vee_sl3(conj_x1_hat), 'b c t l -> b l t c')
+
     # conjugate x2
     x2_hat = hat_layer(x2.transpose(2, -1))
     conj_x2_hat = torch.matmul(H, torch.matmul(x2_hat, torch.inverse(H)))
-    conj_x2 = vee_sl3(conj_x2_hat).transpose(2, -1)
+    conj_x2 = rearrange(vee_sl3(conj_x2_hat), 'b c t l -> b l t c')
 
     inv_output = torch.zeros((1, num_training, 1))
     # compute invariant function
@@ -81,11 +83,12 @@ if __name__ == "__main__":
     # conjugate x1
     x1_hat = hat_layer(x1.transpose(2, -1))
     conj_x1_hat = torch.matmul(H, torch.matmul(x1_hat, torch.inverse(H)))
-    conj_x1 = vee_sl3(conj_x1_hat).transpose(2, -1)
+    conj_x1 = rearrange(vee_sl3(conj_x1_hat), 'b c t l -> b l t c')
+
     # conjugate x2
     x2_hat = hat_layer(x2.transpose(2, -1))
     conj_x2_hat = torch.matmul(H, torch.matmul(x2_hat, torch.inverse(H)))
-    conj_x2 = vee_sl3(conj_x2_hat).transpose(2, -1)
+    conj_x2 = rearrange(vee_sl3(conj_x2_hat), 'b c t l -> b l t c')
     inv_output = torch.zeros((1, num_testing, 1))
     # compute invariant function
     for n in range(num_testing):

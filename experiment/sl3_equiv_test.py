@@ -46,6 +46,7 @@ def test_equivariance(model, test_loader, criterion, config, device):
     hat_layer = HatLayerSl3().to(device)
     with torch.no_grad():
         loss_sum = 0.0
+        loss_non_conj_sum = 0.0
         diff_output_sum = 0.0
         for i, sample in tqdm(enumerate(test_loader, start=0)):
             x = sample['x'].to(device)  # [B, 5, 8, 1]
@@ -55,9 +56,7 @@ def test_equivariance(model, test_loader, criterion, config, device):
 
             output_x = model(x) # [B, 8]
             output_x_hat = hat_layer(output_x)  # [B, 3, 3]
-            # print(output_x)
-            # print(x_conj.shape)
-            # print(H.shape)
+            loss_non_conj_sum += criterion(output_x, y).item()
 
             for j in range(x_conj.shape[1]):
                 x_conj_j = x_conj[:, j, :, :, :]    # [B, 5, 8, 1]
@@ -86,8 +85,9 @@ def test_equivariance(model, test_loader, criterion, config, device):
 
         loss_avg = loss_sum/len(test_loader)/x_conj.shape[1]
         diff_output_avg = diff_output_sum/len(test_loader.dataset)/x_conj.shape[1]/x_conj.shape[3]
+        loss_non_conj_avg = loss_non_conj_sum/len(test_loader)
 
-    return loss_avg, diff_output_avg
+    return loss_avg, loss_non_conj_avg, diff_output_avg
 
 def main():
     # torch.autograd.set_detect_anomaly(True)
@@ -103,23 +103,24 @@ def main():
     # load yaml file
     config = yaml.safe_load(open(args.test_config))
 
-    test_set = sl3EquivDataSet5Input(config['test_data_path'], device=device)
+    test_set = sl3EquivDataSetLieBracket(config['test_data_path'], device=device)
     test_loader = DataLoader(dataset=test_set, batch_size=config['batch_size'],
                              shuffle=config['shuffle'])
     
     if config['model_type'] == "LN":
-        model = SL3EquivariantLayers(5).to(device)
+        model = SL3EquivariantLayers(3).to(device)
     elif config['model_type'] == "MLP":
-        model = MLP(40).to(device)
+        model = MLP(24).to(device)
 
     # model = SL3InvariantLayersTest(2).to(device)
     checkpoint = torch.load(config['model_path'])
     model.load_state_dict(checkpoint['model_state_dict'])
 
     criterion = nn.MSELoss().to(device)
-    test_loss_equiv, diff_output_avg = test_equivariance(model, test_loader, criterion, config, device)
+    test_loss_equiv, loss_non_conj_avg, diff_output_avg = test_equivariance(model, test_loader, criterion, config, device)
     print("test loss: ", test_loss_equiv)
     print("avg diff output: ", diff_output_avg)
+    print("loss non conj avg: ", loss_non_conj_avg)
 
 if __name__ == "__main__":
     main()

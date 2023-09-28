@@ -17,15 +17,13 @@ def invariant_function(x1, x2, x3, x4, x5):
     return torch.sin(torch.trace(x1@x2@x3))+torch.cos(torch.trace(x3@x4@x5))\
         -torch.pow(torch.trace(x5@x1), 6)/2.0+torch.det(x3@x2)+torch.exp(torch.trace(x4@x1))\
         +torch.trace(x1@x2@x3@x4@x5)
-    # return torch.sin(torch.trace(x1@x1))+torch.cos(torch.trace(x2@x2))\
-    #     -torch.pow(torch.trace(x2@x2), 3)/2.0+torch.det(x1@x2)+torch.exp(torch.trace(x1@x1))
 
 
 if __name__ == "__main__":
     data_saved_path = "data/sl3_inv_5_input_data/"
-    data_name = "sl3_inv_100_s_05"
-    num_training = 100
-    num_testing = 100
+    data_name = "sl3_inv_1000_s_05_test"
+    num_training = 1000
+    num_testing = 1000
     num_conjugate = 500
     rnd_scale = 0.5
 

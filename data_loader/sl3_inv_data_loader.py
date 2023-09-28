@@ -101,7 +101,7 @@ class sl3InvDataSet5Input(Dataset):
 
 if __name__ == "__main__":
 
-    DataLoader = sl3InvDataSet5Input("data/sl3_inv_5_input_data/sl3_inv_5_input_100_s_05_train_data.npz")
+    DataLoader = sl3InvDataSet5Input("data/sl3_inv_5_input_data/sl3_inv_1000_s_05_train_data.npz")
 
     print(DataLoader.x1.shape)
     print(DataLoader.x2.shape)
@@ -113,5 +113,5 @@ if __name__ == "__main__":
     for i, samples in tqdm(enumerate(DataLoader, start=0)):
         input_data = samples['x']
         y = samples['y']
-        # print(y)
+        print(y)
         # print(input_data.shape)

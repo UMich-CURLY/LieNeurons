@@ -35,7 +35,7 @@ class SL3InvariantLayers(nn.Module):
         self.relu = nn.ReLU()
         self.fc2 = nn.Linear(feat_dim, feat_dim)
         self.fc3 = nn.Linear(feat_dim, feat_dim)
-        self.fc_final = nn.Linear(inv_dir_dim*feat_dim, 1, bias=False)
+        self.fc_final = nn.Linear(inv_dir_dim*feat_dim, 1, bias=True)
 
     def forward(self, x):
         '''
@@ -43,9 +43,9 @@ class SL3InvariantLayers(nn.Module):
         '''
         x = self.ln_fc(x)   # [B, F, 8, 1]
         # x = self.ln_norm(x)  # [B, F, 8, 1]
-        x = self.ln_fc2(x)  # [B, F, 8, 1]
-        # x = self.ln_norm(x)  # [B, F, 8, 1]
-        x = self.ln_fc3(x)
+        # x = self.ln_fc2(x)  # [B, F, 8, 1]
+        # # x = self.ln_norm(x)  # [B, F, 8, 1]
+        # x = self.ln_fc3(x)
         x_inv = self.ln_inv(x)  # [B, F, 1, 1]
         x_inv = torch.permute(x_inv, (0, 3, 2, 1))
 

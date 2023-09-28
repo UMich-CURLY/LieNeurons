@@ -164,13 +164,13 @@ def main():
     config = yaml.safe_load(open(args.training_config))
 
 
-    # training_set = sl3InvDataSet2Input(config['train_data_path'], device=device)
-    # train_loader = DataLoader(dataset=training_set, batch_size=config['batch_size'],
-    #                           shuffle=config['shuffle'])
+    training_set = sl3InvDataSet2Input(config['train_data_path'], device=device)
+    train_loader = DataLoader(dataset=training_set, batch_size=config['batch_size'],
+                              shuffle=config['shuffle'])
 
-    # test_set = sl3InvDataSet2Input(config['test_data_path'], device=device)
-    # test_loader = DataLoader(dataset=test_set, batch_size=config['batch_size'],
-    #                          shuffle=config['shuffle'])
+    test_set = sl3InvDataSet2Input(config['test_data_path'], device=device)
+    test_loader = DataLoader(dataset=test_set, batch_size=config['batch_size'],
+                             shuffle=config['shuffle'])
     
     # model = SL3InvariantLayers(2).to(device)
     # # model = SL3InvariantLayersTest(2).to(device)
@@ -178,17 +178,19 @@ def main():
 
 
     # 5 input 
-    training_set = sl3InvDataSet5Input(config['train_data_path'], device=device)
-    train_loader = DataLoader(dataset=training_set, batch_size=config['batch_size'],
-                              shuffle=config['shuffle'])
+    # training_set = sl3InvDataSet5Input(config['train_data_path'], device=device)
+    # train_loader = DataLoader(dataset=training_set, batch_size=config['batch_size'],
+    #                           shuffle=config['shuffle'])
 
-    test_set = sl3InvDataSet5Input(config['test_data_path'], device=device)
-    test_loader = DataLoader(dataset=test_set, batch_size=config['batch_size'],
-                             shuffle=config['shuffle'])
-    
-    model = SL3InvariantLayers(5).to(device)
-    # model = SL3InvariantLayersTest(5).to(device)
-    # model = MLP(40).to(device)
+    # test_set = sl3InvDataSet5Input(config['test_data_path'], device=device)
+    # test_loader = DataLoader(dataset=test_set, batch_size=config['batch_size'],
+    #                          shuffle=config['shuffle'])
+
+
+    if config['model_type'] == "LN":
+        model = SL3InvariantLayers(2).to(device)
+    elif config['model_type'] == "MLP":
+        model = MLP(16).to(device)
 
     train(model, train_loader, test_loader, config, device)
 

@@ -4,13 +4,13 @@ test_data_path: "/home/justin/code/LieNeurons/data/sl3_equiv_5_input_data/sl3_eq
 model_description: "SL3EquivariantFunctionFitting"
 
 print_freq: 1
-model_type: "LN"
-model_save_path: "/home/justin/code/LieNeurons/weights/0926_platonic_cls_LN"
-log_writer_path: "/home/justin/code/LieNeurons/logs/0926_platonic_cls_LN"
+# model_type: "LN"
+# model_save_path: "/home/justin/code/LieNeurons/weights/0926_platonic_cls_LN"
+# log_writer_path: "/home/justin/code/LieNeurons/logs/0926_platonic_cls_LN"
 
-# model_type: "MLP"
-# model_save_path: "/home/justin/code/LieNeurons/weights/0926_platonic_cls_MLP"
-# log_writer_path: "/home/justin/code/LieNeurons/logs/0926_platonic_cls_MLP"
+model_type: "MLP"
+model_save_path: "/home/justin/code/LieNeurons/weights/0926_platonic_cls_MLP"
+log_writer_path: "/home/justin/code/LieNeurons/logs/0926_platonic_cls_MLP"
 
 resume_training: false
 resume_model_path: "/home/justin/code/LieNeurons/weights/0921_sl3_equiv_first_try.pth.tar"

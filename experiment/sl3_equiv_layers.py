@@ -25,14 +25,14 @@ class SL3EquivariantLayers(nn.Module):
         share_nonlinearity = False
         self.ln_fc = LNLinearAndKillingRelu(
             in_channels, feat_dim, share_nonlinearity=share_nonlinearity)
-        self.ln_norm = LNBatchNorm(feat_dim, dim=4, affine=False, momentum=0.1)
+        # self.ln_norm = LNBatchNorm(feat_dim, dim=4, affine=False, momentum=0.1)
         self.ln_fc2 = LNLinearAndKillingRelu(feat_dim, feat_dim,share_nonlinearity=share_nonlinearity)
         self.ln_fc3 = LNLinearAndKillingRelu(feat_dim, feat_dim,share_nonlinearity=share_nonlinearity)
         
-        self.fc = nn.Linear(feat_dim, feat_dim)
-        self.relu = nn.ReLU()
-        self.fc2 = nn.Linear(feat_dim, feat_dim)
-        self.fc3 = nn.Linear(feat_dim, feat_dim)
+        # self.fc = nn.Linear(feat_dim, feat_dim)
+        # self.relu = nn.ReLU()
+        # self.fc2 = nn.Linear(feat_dim, feat_dim)
+        # self.fc3 = nn.Linear(feat_dim, feat_dim)
         self.fc_final = nn.Linear(feat_dim, 1, bias=False)
 
     def forward(self, x):
