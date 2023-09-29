@@ -25,7 +25,7 @@ from data_gen.gen_platonic_solids import *
 def init_writer(config):
     writer = SummaryWriter(
         config['log_writer_path']+"_"+str(time.localtime()), comment=config['model_description'])
-    writer.add_text("train_data_path: ", config['train_data_path'])
+    # writer.add_text("train_data_path: ", config['train_data_path'])
     writer.add_text("model_save_path: ", config['model_save_path'])
     writer.add_text("log_writer_path: ", config['log_writer_path'])
     writer.add_text("shuffle: ", str(config['shuffle']))
@@ -197,10 +197,16 @@ def main():
     test_loader = DataLoader(dataset=test_set, batch_size=config['batch_size'],
                               shuffle=config['shuffle'])
     
-    if config['model_type'] == "LN":
-        model = LNPlatonicSolidClassifier(3).to(device)
+    if config['model_type'] == "LN_relu_bracket":
+        model = LNReluBracketPlatonicSolidClassifier(3).to(device)
+    elif config['model_type'] == "LN_relu":
+        model = LNReluPlatonicSolidClassifier(3).to(device)
+    elif config['model_type'] == "LN_bracket":
+        model = LNBracketPlatonicSolidClassifier(3).to(device)
     elif config['model_type'] == "MLP":
         model = MLP(288).to(device)
+    elif config['model_type'] == "LN_bracket_no_residual":
+        model = LNBracketNoResidualConnectPlatonicSolidClassifier(3).to(device)
 
     train(model, train_loader, test_loader, config, device)
 

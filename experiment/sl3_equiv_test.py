@@ -53,6 +53,7 @@ def test_equivariance(model, test_loader, criterion, config, device):
             x_conj = sample['x_conjugate'].to(device)   # [B, C, 5, 8, 1]
             y = sample['y'].to(device)  # [B, 8]
             H = sample['H'].to(device)  # [B, C, 3, 3]
+            y_conj = sample['y_conj']
 
             output_x = model(x) # [B, 8]
             output_x_hat = hat_layer(output_x)  # [B, 3, 3]
@@ -70,14 +71,24 @@ def test_equivariance(model, test_loader, criterion, config, device):
 
                 diff_output = output_then_conj - conj_output
                 # print(output_then_conj)
-                # print(conj_output)
+                
+                conj_output_hat = hat_layer(conj_output)
+                conj_output_hat_conj_back = torch.matmul(torch.inverse(H_j), torch.matmul(conj_output_hat, H_j))
+                conj_output_conj_back = vee_sl3(conj_output_hat_conj_back)
+
+
+                # y_hat = hat_layer(y)
+                # conj_y_hat = torch.matmul(H_j, torch.matmul(y_hat, torch.inverse(H_j)))
+                # conj_y = vee_sl3(conj_y_hat)
+                loss = criterion(conj_output_conj_back, y)
+                # print("conj_out", conj_output[0,:])
+                # print("y_conj", y_conj[0, j, :])
+                # print("diff_out_out_conj", diff_output[0,:])
+                # print("out",output_x[0,:])
+                # print("y", y[0,:])
+                # print("diff_out",output_x[0,:] - y[0,:])
+                # print(loss.item())
                 # print("----------------------")
-
-                y_hat = hat_layer(y)
-                conj_y_hat = torch.matmul(H_j, torch.matmul(y_hat, torch.inverse(H_j)))
-                conj_y = vee_sl3(conj_y_hat)
-                loss = criterion(conj_output, conj_y)
-
                 loss_sum += loss.item()
                 diff_output_sum += torch.sum(torch.abs(diff_output))
 
@@ -103,14 +114,20 @@ def main():
     # load yaml file
     config = yaml.safe_load(open(args.test_config))
 
-    test_set = sl3EquivDataSetLieBracket(config['test_data_path'], device=device)
+    test_set = sl3EquivDataSetLieBracket2Input(config['test_data_path'], device=device)
     test_loader = DataLoader(dataset=test_set, batch_size=config['batch_size'],
                              shuffle=config['shuffle'])
     
-    if config['model_type'] == "LN":
-        model = SL3EquivariantLayers(3).to(device)
+    if config['model_type'] == "LN_relu_bracket":
+        model = SL3EquivariantReluBracketLayers(2).to(device)
+    elif config['model_type'] == "LN_relu":
+        model = SL3EquivariantReluLayers(2).to(device)
+    elif config['model_type'] == "LN_bracket":
+        model = SL3EquivariantBracketLayers(2).to(device)
     elif config['model_type'] == "MLP":
-        model = MLP(24).to(device)
+        model = MLP(16).to(device)
+    elif config['model_type'] == "LN_bracket_no_residual":
+        model = SL3EquivariantBracketNoResidualConnectLayers(2).to(device)
 
     # model = SL3InvariantLayersTest(2).to(device)
     checkpoint = torch.load(config['model_path'])

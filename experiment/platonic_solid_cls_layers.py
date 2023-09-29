@@ -43,7 +43,101 @@ class LNPlatonicSolidClassifier(nn.Module):
         x_out = rearrange(self.fc_final(x_inv), 'b 1 1 cls -> b cls')   # [B, cls]
 
         return x_out
-    
+
+class LNReluPlatonicSolidClassifier(nn.Module):
+    def __init__(self, in_channels):
+        super(LNReluPlatonicSolidClassifier, self).__init__()
+        feat_dim = 256
+        share_nonlinearity = False
+        self.ln_fc = LNLinearAndKillingRelu(
+            in_channels, feat_dim, share_nonlinearity=share_nonlinearity)
+        self.ln_pooling = LNMaxPool(feat_dim, abs_killing_form = False) # [B, F, 8, 1]
+        self.ln_inv = LNInvariantPooling(feat_dim, method='self_killing')
+        self.fc_final = nn.Linear(feat_dim, 3, bias=False)
+
+    def forward(self, x):
+        '''
+        x input of shape [B, F, 8, 1]
+        '''
+        x = self.ln_fc(x)   # [B, F, 8, N]
+        x = self.ln_pooling(x) # [B, F, 8, 1]
+        x_inv = self.ln_inv(x).unsqueeze(-1)  # [B, F, 1, 1]
+        x_inv = torch.permute(x_inv, (0, 3, 2, 1))  # [B, 1, 1, F]
+        x_out = rearrange(self.fc_final(x_inv), 'b 1 1 cls -> b cls')   # [B, cls]
+
+        return x_out
+
+class LNBracketPlatonicSolidClassifier(nn.Module):
+    def __init__(self, in_channels):
+        super(LNBracketPlatonicSolidClassifier, self).__init__()
+        feat_dim = 256
+        share_nonlinearity = False
+        self.ln_fc = LNLinearAndLieBracket(in_channels, feat_dim,share_nonlinearity=share_nonlinearity)
+        # self.ln_fc2 = LNLinearAndLieBracket(feat_dim, feat_dim,share_nonlinearity=share_nonlinearity)
+        self.ln_pooling = LNMaxPool(feat_dim, abs_killing_form = False) # [B, F, 8, 1]
+        self.ln_inv = LNInvariantPooling(feat_dim, method='self_killing')
+        self.fc_final = nn.Linear(feat_dim, 3, bias=False)
+
+    def forward(self, x):
+        '''
+        x input of shape [B, F, 8, 1]
+        '''
+        x = self.ln_fc(x)   # [B, F, 8, N]
+        x = self.ln_pooling(x) # [B, F, 8, 1]
+        x_inv = self.ln_inv(x).unsqueeze(-1)  # [B, F, 1, 1]
+        x_inv = torch.permute(x_inv, (0, 3, 2, 1))  # [B, 1, 1, F]
+        x_out = rearrange(self.fc_final(x_inv), 'b 1 1 cls -> b cls')   # [B, cls]
+
+        return x_out
+
+class LNReluBracketPlatonicSolidClassifier(nn.Module):
+    def __init__(self, in_channels):
+        super(LNReluBracketPlatonicSolidClassifier, self).__init__()
+        feat_dim = 256
+        share_nonlinearity = False
+        self.ln_fc = LNLinearAndKillingRelu(
+            in_channels, feat_dim, share_nonlinearity=share_nonlinearity)
+        self.ln_fc2 = LNLinearAndLieBracket(feat_dim, feat_dim,share_nonlinearity=share_nonlinearity)
+        self.ln_pooling = LNMaxPool(feat_dim, abs_killing_form = False) # [B, F, 8, 1]
+        self.ln_inv = LNInvariantPooling(feat_dim, method='self_killing')
+        self.fc_final = nn.Linear(feat_dim, 3, bias=False)
+
+    def forward(self, x):
+        '''
+        x input of shape [B, F, 8, 1]
+        '''
+        x = self.ln_fc(x)   # [B, F, 8, N]
+        x = self.ln_fc2(x)  # [B, F, 8, N]
+        x = self.ln_pooling(x) # [B, F, 8, 1]
+        x_inv = self.ln_inv(x).unsqueeze(-1)  # [B, F, 1, 1]
+        x_inv = torch.permute(x_inv, (0, 3, 2, 1))  # [B, 1, 1, F]
+        x_out = rearrange(self.fc_final(x_inv), 'b 1 1 cls -> b cls')   # [B, cls]
+
+        return x_out
+
+class LNBracketNoResidualConnectPlatonicSolidClassifier(nn.Module):
+    def __init__(self, in_channels):
+        super(LNBracketNoResidualConnectPlatonicSolidClassifier, self).__init__()
+        feat_dim = 256
+        share_nonlinearity = False
+        self.ln_fc = LNLinearAndLieBracketNoResidualConnect(in_channels, feat_dim,share_nonlinearity=share_nonlinearity)
+        # self.ln_fc2 = LNLinearAndLieBracket(feat_dim, feat_dim,share_nonlinearity=share_nonlinearity)
+        self.ln_pooling = LNMaxPool(feat_dim, abs_killing_form = False) # [B, F, 8, 1]
+        self.ln_inv = LNInvariantPooling(feat_dim, method='self_killing')
+        self.fc_final = nn.Linear(feat_dim, 3, bias=False)
+
+    def forward(self, x):
+        '''
+        x input of shape [B, F, 8, 1]
+        '''
+        x = self.ln_fc(x)   # [B, F, 8, N]
+        x = self.ln_pooling(x) # [B, F, 8, 1]
+        x_inv = self.ln_inv(x).unsqueeze(-1)  # [B, F, 1, 1]
+        x_inv = torch.permute(x_inv, (0, 3, 2, 1))  # [B, 1, 1, F]
+        x_out = rearrange(self.fc_final(x_inv), 'b 1 1 cls -> b cls')   # [B, cls]
+
+        return x_out
+
 class MLP(nn.Module):
     def __init__(self, in_channels):
         super(MLP, self).__init__()

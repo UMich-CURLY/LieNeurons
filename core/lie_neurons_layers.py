@@ -32,7 +32,7 @@ class LNLinear(nn.Module):
 
 
 class LNKillingRelu(nn.Module):
-    def __init__(self, in_channels, share_nonlinearity=False):
+    def __init__(self, in_channels, share_nonlinearity=False, leaky_relu=False,negative_slope=0.2):
         super(LNKillingRelu, self).__init__()
         self.share_nonlinearity = share_nonlinearity
         if share_nonlinearity == True:
@@ -41,6 +41,8 @@ class LNKillingRelu(nn.Module):
             self.learn_dir = nn.Linear(in_channels, in_channels, bias=False)
 
         self.HatLayerSl3 = HatLayerSl3()
+        self.leaky_relu = leaky_relu
+        self.negative_slope = negative_slope
 
     def forward(self, x):
         '''
@@ -57,11 +59,18 @@ class LNKillingRelu(nn.Module):
         x_hat = self.HatLayerSl3(x)
         d_hat = self.HatLayerSl3(d)
         kf_xd = killingform_sl3(x_hat, d_hat)
-        kf_dd = killingform_sl3(d_hat, d_hat)
+        # kf_dd = killingform_sl3(d_hat, d_hat)
         # kf_dd_norm = torch.where(
         # kf_dd < 0, torch.sqrt(-kf_dd)+EPS, torch.sqrt(kf_dd) + EPS)
         # x_out = torch.where(kf_xd < 0, x, x - (-kf_xd)/(-kf_dd) * d)
-        x_out = torch.where(kf_xd <= 0, x, x - (-kf_xd) * d)
+        
+        if self.leaky_relu:
+            mask = (kf_xd <= 0).float()
+            # print(x.shape)
+            x_out = self.negative_slope * x + (1-self.negative_slope ) \
+                *(mask*x + (1-mask)*(x-(-kf_xd)*d))
+        else:
+            x_out = torch.where(kf_xd <= 0, x, x - (-kf_xd) * d)
         # x_out = torch.where(kf_xd < 0, x, torch.zeros_like(x))
 
         # x_out = x
@@ -76,26 +85,134 @@ class LNKillingRelu(nn.Module):
         return x_out
 
 
+class LNLieBracket(nn.Module):
+    def __init__(self, in_channels, share_nonlinearity=False):
+        super(LNLieBracket, self).__init__()
+        self.share_nonlinearity = share_nonlinearity
+        if share_nonlinearity == True:
+            self.learn_dir = nn.Linear(in_channels, 1, bias=False)
+            self.learn_dir2 = nn.Linear(in_channels, 1, bias=False)
+        else:
+            self.learn_dir = nn.Linear(in_channels, in_channels, bias=False)
+            self.learn_dir2 = nn.Linear(in_channels, in_channels, bias=False)
+
+        self.HatLayerSl3 = HatLayerSl3()
+        self.relu = LNKillingRelu(
+            in_channels, share_nonlinearity=share_nonlinearity)
+
+
+    def forward(self, x):
+        '''
+        x: point features of shape [B, F, 8, N]
+        '''
+        B, F, _, N = x.shape
+
+        d = self.learn_dir(x.transpose(1, -1)).transpose(1, -1)
+        d2 = self.learn_dir2(x.transpose(1, -1)).transpose(1, -1)
+
+        d = d.transpose(2, -1)
+        d2 = d2.transpose(2,-1)
+
+        d_hat = self.HatLayerSl3(d)
+        d2_hat = self.HatLayerSl3(d2)
+        lie_bracket = torch.matmul(d2_hat, d_hat) - torch.matmul(d_hat,d2_hat)
+        x_out = x + vee_sl3(lie_bracket).transpose(2, -1)
+        return x_out
+    
+
+class LNLieBracketNoResidualConnect(nn.Module):
+    def __init__(self, in_channels, share_nonlinearity=False):
+        super(LNLieBracketNoResidualConnect, self).__init__()
+        self.share_nonlinearity = share_nonlinearity
+        if share_nonlinearity == True:
+            self.learn_dir = nn.Linear(in_channels, 1, bias=False)
+            self.learn_dir2 = nn.Linear(in_channels, 1, bias=False)
+        else:
+            self.learn_dir = nn.Linear(in_channels, in_channels, bias=False)
+            self.learn_dir2 = nn.Linear(in_channels, in_channels, bias=False)
+
+        self.HatLayerSl3 = HatLayerSl3()
+        self.relu = LNKillingRelu(
+            in_channels, share_nonlinearity=share_nonlinearity)
+
+
+    def forward(self, x):
+        '''
+        x: point features of shape [B, F, 8, N]
+        '''
+        B, F, _, N = x.shape
+
+        d = self.learn_dir(x.transpose(1, -1)).transpose(1, -1)
+        d2 = self.learn_dir2(x.transpose(1, -1)).transpose(1, -1)
+
+        d = d.transpose(2, -1)
+        d2 = d2.transpose(2,-1)
+
+        d_hat = self.HatLayerSl3(d)
+        d2_hat = self.HatLayerSl3(d2)
+        lie_bracket = torch.matmul(d2_hat, d_hat) - torch.matmul(d_hat,d2_hat)
+        x_out = vee_sl3(lie_bracket).transpose(2, -1)
+        return x_out
+
 class LNLinearAndKillingRelu(nn.Module):
-    def __init__(self, in_channels, out_channels, share_nonlinearity=False):
+    def __init__(self, in_channels, out_channels, share_nonlinearity=False, leaky_relu=False,negative_slope=0.2):
         super(LNLinearAndKillingRelu, self).__init__()
         self.share_nonlinearity = share_nonlinearity
 
         self.linear = LNLinear(in_channels, out_channels)
         self.leaky_relu = LNKillingRelu(
-            out_channels, share_nonlinearity=share_nonlinearity)
+            out_channels, share_nonlinearity=share_nonlinearity, leaky_relu=leaky_relu, negative_slope=negative_slope)
 
     def forward(self, x):
         '''
         x: point features of shape [B, N_feat, 3, N_samples, ...]
         '''
-        # Conv
+        # Linear
         x = self.linear(x)
         # LeakyReLU
         x_out = self.leaky_relu(x)
 
         return x_out
 
+class LNLinearAndLieBracket(nn.Module):
+    def __init__(self, in_channels, out_channels, share_nonlinearity=False):
+        super(LNLinearAndLieBracket, self).__init__()
+        self.share_nonlinearity = share_nonlinearity
+
+        self.linear = LNLinear(in_channels, out_channels)
+        self.liebracket = LNLieBracket(
+            out_channels, share_nonlinearity=share_nonlinearity)
+
+    def forward(self, x):
+        '''
+        x: point features of shape [B, N_feat, 3, N_samples, ...]
+        '''
+        # Linear
+        x = self.linear(x)
+        # Bracket
+        x_out = self.liebracket(x)
+
+        return x_out
+
+class LNLinearAndLieBracketNoResidualConnect(nn.Module):
+    def __init__(self, in_channels, out_channels, share_nonlinearity=False):
+        super(LNLinearAndLieBracketNoResidualConnect, self).__init__()
+        self.share_nonlinearity = share_nonlinearity
+
+        self.linear = LNLinear(in_channels, out_channels)
+        self.liebracket = LNLieBracketNoResidualConnect(
+            out_channels, share_nonlinearity=share_nonlinearity)
+
+    def forward(self, x):
+        '''
+        x: point features of shape [B, N_feat, 3, N_samples, ...]
+        '''
+        # Linear
+        x = self.linear(x)
+        # Bracket
+        x_out = self.liebracket(x)
+
+        return x_out
 
 class LNMaxPool(nn.Module):
     def __init__(self, in_channels, abs_killing_form=False):

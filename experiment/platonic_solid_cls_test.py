@@ -56,7 +56,7 @@ def test_perspective(model, test_loader, criterion, config, device):
 
         loss_avg = loss_sum/config['num_test']*config['batch_size']/config['num_rotations']
         acc_avg = num_correct/config['num_test']/config['num_rotations']
-        acc_avg_non_conj = num_correct_non_conj/config['num_test']
+        acc_avg_non_conj = num_correct_non_conj/config['num_test']/1.0
     return loss_avg, acc_avg, acc_avg_non_conj
 
 def random_sample_rotations(num_rotation, rotation_factor: float = 1.0, device='cpu') -> np.ndarray:
@@ -89,10 +89,17 @@ def main():
     test_loader = DataLoader(dataset=test_set, batch_size=config['batch_size'],
                               shuffle=config['shuffle'])
     
-    if config['model_type'] == "LN":
-        model = LNPlatonicSolidClassifier(3).to(device)
+    if config['model_type'] == "LN_relu_bracket":
+        model = LNReluBracketPlatonicSolidClassifier(3).to(device)
+    elif config['model_type'] == "LN_relu":
+        model = LNReluPlatonicSolidClassifier(3).to(device)
+    elif config['model_type'] == "LN_bracket":
+        model = LNBracketPlatonicSolidClassifier(3).to(device)
     elif config['model_type'] == "MLP":
         model = MLP(288).to(device)
+    elif config['model_type'] == "LN_bracket_no_residual":
+        model = LNBracketNoResidualConnectPlatonicSolidClassifier(3).to(device)
+        
     checkpoint = torch.load(config['model_path'])
     model.load_state_dict(checkpoint['model_state_dict'])
 
@@ -100,7 +107,7 @@ def main():
     test_loss, test_acc, test_acc_non_conj = test_perspective(model, test_loader, criterion, config, device)
     print("equivariant test loss: ", test_loss)
     print("equivariant test acc: ", test_acc)
-    print("test without conjugate acc: ", test_acc_non_conj)
+    print("test without conjugate acc: ", "{:.4f}".format(test_acc_non_conj))
 
 if __name__ == "__main__":
     main()

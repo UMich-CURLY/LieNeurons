@@ -64,6 +64,13 @@ def test_invariance(model, test_loader, criterion, config, device):
                 diff_output_sum += torch.sum(torch.abs(diff_output))
                 # print(output_conj)
 
+            # print("diff", diff_output[0,:])
+            # print("conj_out", output_conj[0,:])
+            # print("out",output_x[0,:])
+            # print("y", y[0,:])
+            # print(loss.item())
+            # print("----------------------")
+
         loss_avg = loss_sum/len(test_loader)/x_conj.shape[1]
         diff_output_avg = diff_output_sum/len(test_loader.dataset)/x_conj.shape[1]
         loss_non_conj_avg = loss_non_conj_sum/len(test_loader)
@@ -89,10 +96,16 @@ def main():
                              shuffle=config['shuffle'])
     
 
-    if config['model_type'] == "LN":
-        model = SL3InvariantLayers(2).to(device)
+    if config['model_type'] == "LN_relu_bracket":
+        model = SL3InvariantReluBracketLayers(2).to(device)
+    elif config['model_type'] == "LN_relu":
+        model = SL3InvariantReluLayers(2).to(device)
+    elif config['model_type'] == "LN_bracket":
+        model = SL3InvariantBracketLayers(2).to(device)
     elif config['model_type'] == "MLP":
         model = MLP(16).to(device)
+    elif config['model_type'] == "LN_bracket_no_residual":
+        model = SL3InvariantBracketNoResidualConnectLayers(2).to(device)
 
     checkpoint = torch.load(config['model_path'])
     model.load_state_dict(checkpoint['model_state_dict'])

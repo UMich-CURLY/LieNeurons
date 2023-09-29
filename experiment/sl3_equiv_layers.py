@@ -23,17 +23,24 @@ class SL3EquivariantLayers(nn.Module):
         super(SL3EquivariantLayers, self).__init__()
         feat_dim = 256
         share_nonlinearity = False
-        self.ln_fc = LNLinearAndKillingRelu(
-            in_channels, feat_dim, share_nonlinearity=share_nonlinearity)
-        # self.ln_norm = LNBatchNorm(feat_dim, dim=4, affine=False, momentum=0.1)
-        self.ln_fc2 = LNLinearAndKillingRelu(feat_dim, feat_dim,share_nonlinearity=share_nonlinearity)
-        self.ln_fc3 = LNLinearAndKillingRelu(feat_dim, feat_dim,share_nonlinearity=share_nonlinearity)
-        
+        leaky_relu = True
+        # self.ln_fc = LNLinearAndKillingRelu(
+        #     in_channels, feat_dim, share_nonlinearity=share_nonlinearity, leaky_relu=leaky_relu)
+        # # # self.ln_norm = LNBatchNorm(feat_dim, dim=4, affine=False, momentum=0.1)
+        # self.ln_fc2 = LNLinearAndKillingRelu(feat_dim, feat_dim,share_nonlinearity=share_nonlinearity,leaky_relu=leaky_relu)
+        self.ln_fc3 = LNLinearAndKillingRelu(feat_dim, feat_dim,share_nonlinearity=share_nonlinearity,leaky_relu=leaky_relu)
+        # self.ln_fc4 = LNLinearAndKillingRelu(feat_dim, feat_dim,share_nonlinearity=share_nonlinearity,leaky_relu=leaky_relu)
+        # self.ln_fc5 = LNLinearAndKillingRelu(feat_dim, feat_dim,share_nonlinearity=share_nonlinearity,leaky_relu=leaky_relu)
+        # self.ln_fc6 = LNLinearAndKillingRelu(feat_dim, feat_dim,share_nonlinearity=share_nonlinearity,leaky_relu=leaky_relu)
+        self.ln_fc = LNLinearAndLieBracket(in_channels, feat_dim,share_nonlinearity=share_nonlinearity)
+        self.ln_fc2 = LNLinearAndLieBracket(feat_dim, feat_dim,share_nonlinearity=share_nonlinearity)
+        # self.ln_fc4 = LNLinearAndLieBracket(feat_dim, feat_dim,share_nonlinearity=share_nonlinearity)
         # self.fc = nn.Linear(feat_dim, feat_dim)
         # self.relu = nn.ReLU()
         # self.fc2 = nn.Linear(feat_dim, feat_dim)
         # self.fc3 = nn.Linear(feat_dim, feat_dim)
         self.fc_final = nn.Linear(feat_dim, 1, bias=False)
+        # self.ln_pooling = LNMaxPool(feat_dim, abs_killing_form = False) # [B, F, 8, 1]
 
     def forward(self, x):
         '''
@@ -42,15 +49,119 @@ class SL3EquivariantLayers(nn.Module):
         x = self.ln_fc(x)   # [B, F, 8, 1]
         # x = self.ln_norm(x)  # [B, F, 8, 1]
         x = self.ln_fc2(x)  # [B, F, 8, 1]
-        # x = self.ln_norm(x)  # [B, F, 8, 1]
+        # # x = self.ln_norm(x)  # [B, F, 8, 1]
         x = self.ln_fc3(x)  # [B, F, 8, 1]
 
+        # x = self.ln_fc4(x)  # [B, F, 8, 1]
+
+        # x = self.ln_fc5(x)  # [B, F, 8, 1]
+
+
+        # x = self.ln_fc6(x)  # [B, F, 8, 1]
         x = torch.permute(x, (0, 3, 2, 1))  # [B, 1, 8, F]
         x_out = rearrange(self.fc_final(x), 'b 1 k 1 -> b k')   # [B, 8]
-
+        # x_out = rearrange(self.ln_pooling(x), 'b 1 k 1 -> b k')   # [B, F, 1, 1]
         return x_out
 
 
+class SL3EquivariantReluLayers(nn.Module):
+    def __init__(self, in_channels):
+        super(SL3EquivariantReluLayers, self).__init__()
+        feat_dim = 256
+        share_nonlinearity = False
+        leaky_relu = True
+        self.ln_fc = LNLinearAndKillingRelu(
+            in_channels, feat_dim, share_nonlinearity=share_nonlinearity, leaky_relu=leaky_relu)
+        self.ln_fc2 = LNLinearAndKillingRelu(feat_dim, feat_dim,share_nonlinearity=share_nonlinearity,leaky_relu=leaky_relu)
+        
+        self.fc_final = nn.Linear(feat_dim, 1, bias=False)
+
+    def forward(self, x):
+        '''
+        x input of shape [B, F, 8, 1]
+        '''
+        x = self.ln_fc(x)   # [B, F, 8, 1]
+        x = self.ln_fc2(x)  # [B, F, 8, 1]
+        
+        x = torch.permute(x, (0, 3, 2, 1))  # [B, 1, 8, F]
+        x_out = rearrange(self.fc_final(x), 'b 1 k 1 -> b k')   # [B, 8]
+        return x_out
+
+
+class SL3EquivariantBracketLayers(nn.Module):
+    def __init__(self, in_channels):
+        super(SL3EquivariantBracketLayers, self).__init__()
+        feat_dim = 256
+        share_nonlinearity = False
+        leaky_relu = True
+        self.ln_fc = LNLinearAndLieBracket(in_channels, feat_dim,share_nonlinearity=share_nonlinearity)
+        self.ln_fc2 = LNLinearAndLieBracket(feat_dim, feat_dim,share_nonlinearity=share_nonlinearity)
+        
+        self.fc_final = nn.Linear(feat_dim, 1, bias=False)
+
+    def forward(self, x):
+        '''
+        x input of shape [B, F, 8, 1]
+        '''
+        x = self.ln_fc(x)   # [B, F, 8, 1]
+        x = self.ln_fc2(x)  # [B, F, 8, 1]
+
+        x = torch.permute(x, (0, 3, 2, 1))  # [B, 1, 8, F]
+        x_out = rearrange(self.fc_final(x), 'b 1 k 1 -> b k')   # [B, 8]
+        return x_out
+
+class SL3EquivariantReluBracketLayers(nn.Module):
+    def __init__(self, in_channels):
+        super(SL3EquivariantReluBracketLayers, self).__init__()
+        feat_dim = 256
+        share_nonlinearity = False
+        leaky_relu = True
+        self.ln_fc = LNLinearAndKillingRelu(
+            feat_dim, feat_dim, share_nonlinearity=share_nonlinearity, leaky_relu=leaky_relu)
+        self.ln_fc2 = LNLinearAndKillingRelu(
+            feat_dim, feat_dim, share_nonlinearity=share_nonlinearity, leaky_relu=leaky_relu)
+        self.ln_fc_bracket = LNLinearAndLieBracket(in_channels, feat_dim,share_nonlinearity=share_nonlinearity)
+        self.ln_fc_bracket2 = LNLinearAndLieBracket(feat_dim, feat_dim,share_nonlinearity=share_nonlinearity)
+        
+        self.fc_final = nn.Linear(feat_dim, 1, bias=False)
+
+    def forward(self, x):
+        '''
+        x input of shape [B, F, 8, 1]
+        '''
+
+        x = self.ln_fc_bracket(x)  # [B, F, 8, 1]
+        x = self.ln_fc(x)   # [B, F, 8, 1]
+        x = self.ln_fc_bracket2(x)
+        x = self.ln_fc2(x)
+
+        x = torch.permute(x, (0, 3, 2, 1))  # [B, 1, 8, F]
+        x_out = rearrange(self.fc_final(x), 'b 1 k 1 -> b k')   # [B, 8]
+        # x_out = rearrange(self.ln_pooling(x), 'b 1 k 1 -> b k')   # [B, F, 1, 1]
+        return x_out
+
+class SL3EquivariantBracketNoResidualConnectLayers(nn.Module):
+    def __init__(self, in_channels):
+        super(SL3EquivariantBracketNoResidualConnectLayers, self).__init__()
+        feat_dim = 256
+        share_nonlinearity = False
+        leaky_relu = True
+        self.ln_fc = LNLinearAndLieBracketNoResidualConnect(in_channels, feat_dim,share_nonlinearity=share_nonlinearity)
+        self.ln_fc2 = LNLinearAndLieBracketNoResidualConnect(feat_dim, feat_dim,share_nonlinearity=share_nonlinearity)
+        
+        self.fc_final = nn.Linear(feat_dim, 1, bias=False)
+
+    def forward(self, x):
+        '''
+        x input of shape [B, F, 8, 1]
+        '''
+        x = self.ln_fc(x)   # [B, F, 8, 1]
+        x = self.ln_fc2(x)  # [B, F, 8, 1]
+
+        x = torch.permute(x, (0, 3, 2, 1))  # [B, 1, 8, F]
+        x_out = rearrange(self.fc_final(x), 'b 1 k 1 -> b k')   # [B, 8]
+        return x_out
+    
 class SL3InvariantLayersTest(nn.Module):
     def __init__(self, in_channels):
         super(SL3InvariantLayersTest, self).__init__()
@@ -134,7 +245,7 @@ class SL3InvariantLayersTest(nn.Module):
 class MLP(nn.Module):
     def __init__(self, in_channels):
         super(MLP, self).__init__()
-        feat_dim = 256
+        feat_dim = 512
         self.fc = nn.Linear(in_channels, feat_dim)
         self.relu = nn.ReLU()
         self.fc2 = nn.Linear(feat_dim, feat_dim)

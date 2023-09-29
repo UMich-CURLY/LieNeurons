@@ -5,11 +5,24 @@ model_description: "SL3InvariantFunctionFitting"
 
 print_freq: 100
 
-model_type: "LN"
-model_path: "/home/justin/code/LieNeurons/weights/0928_sl3_inv_LN_256_no_share_nonlin_train_10000_lr_0.000003_new_best_test_loss_acc.pt"
+# model_type: "LN"
+# model_path: "/home/justin/code/LieNeurons/weights/0928_sl3_inv_LN_256_no_share_nonlin_train_10000_lr_0.000003_new_best_test_loss_acc.pt"
+
+# model_type: "LN_relu_bracket"
+# model_path: "/home/justin/code/LieNeurons/weights/0928_one_relu_one_bracket_best_test_loss_acc.pt"
+
+# model_type: "LN_relu"
+# model_path: "/home/justin/code/LieNeurons/weights/0928_one_relu_best_test_loss_acc.pt"
+
+# model_type: "LN_bracket"
+# model_path: "/home/justin/code/LieNeurons/weights/0928_one_bracket_0.00003_best_test_loss_acc.pt"
 
 # model_type: "MLP"
-# model_path: "/home/justin/code/LieNeurons/weights/0928_sl3_inv_MLP_256_no_share_nonlin_train_1000_lr_0.00001_best_test_loss_acc.pt"
+# model_path: "/home/justin/code/LieNeurons/weights/0928_MLP_best_test_loss_acc.pt"
+
+model_type: "LN_bracket_no_residual"
+model_path: "/home/justin/code/LieNeurons/weights/0928_one_bracket_no_residual_best_test_loss_acc.pt"
+
 num_workers: 1
 
 batch_size: 100

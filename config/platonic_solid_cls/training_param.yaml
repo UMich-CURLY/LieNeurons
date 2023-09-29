@@ -1,16 +1,29 @@
-train_data_path: "/home/justin/code/LieNeurons/data/sl3_equiv_5_input_data/sl3_equiv_100_s_05_train_data.npz"
-test_data_path: "/home/justin/code/LieNeurons/data/sl3_equiv_5_input_data/sl3_equiv_100_s_05_test_data.npz"
+# train_data_path: "/home/justin/code/LieNeurons/data/sl3_equiv_5_input_data/sl3_equiv_100_s_05_train_data.npz"
+# test_data_path: "/home/justin/code/LieNeurons/data/sl3_equiv_5_input_data/sl3_equiv_100_s_05_test_data.npz"
 # logger
-model_description: "SL3EquivariantFunctionFitting"
+model_description: "SL3classification"
 
 print_freq: 1
-# model_type: "LN"
-# model_save_path: "/home/justin/code/LieNeurons/weights/0926_platonic_cls_LN"
-# log_writer_path: "/home/justin/code/LieNeurons/logs/0926_platonic_cls_LN"
 
-model_type: "MLP"
-model_save_path: "/home/justin/code/LieNeurons/weights/0926_platonic_cls_MLP"
-log_writer_path: "/home/justin/code/LieNeurons/logs/0926_platonic_cls_MLP"
+# model_type: "LN_relu_bracket"
+# model_save_path: "/home/justin/code/LieNeurons/weights/0928_cls_one_relu_one_bracket"
+# log_writer_path: "/home/justin/code/LieNeurons/logs/0928_cls_one_relu_one_bracket"
+
+# model_type: "LN_relu"
+# model_save_path: "/home/justin/code/LieNeurons/weights/0928_cls_one_relu"
+# log_writer_path: "/home/justin/code/LieNeurons/logs/0928_cls_one_relu"
+
+# model_type: "LN_bracket"
+# model_save_path: "/home/justin/code/LieNeurons/weights/0928_cls_one_bracket"
+# log_writer_path: "/home/justin/code/LieNeurons/logs/0928_cls_one_bracket"
+
+# model_type: "MLP"
+# model_save_path: "/home/justin/code/LieNeurons/weights/0928_cls_MLP"
+# log_writer_path: "/home/justin/code/LieNeurons/logs/0928_cls_MLP"
+
+model_type: "LN_bracket_no_residual"
+model_save_path: "/home/justin/code/LieNeurons/weights/0928_cls_one_bracket_no_residual"
+log_writer_path: "/home/justin/code/LieNeurons/logs/0928_cls_one_bracket_no_residual"
 
 resume_training: false
 resume_model_path: "/home/justin/code/LieNeurons/weights/0921_sl3_equiv_first_try.pth.tar"

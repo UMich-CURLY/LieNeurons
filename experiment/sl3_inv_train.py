@@ -187,10 +187,16 @@ def main():
     #                          shuffle=config['shuffle'])
 
 
-    if config['model_type'] == "LN":
-        model = SL3InvariantLayers(2).to(device)
+    if config['model_type'] == "LN_relu_bracket":
+        model = SL3InvariantReluBracketLayers(2).to(device)
+    elif config['model_type'] == "LN_relu":
+        model = SL3InvariantReluLayers(2).to(device)
+    elif config['model_type'] == "LN_bracket":
+        model = SL3InvariantBracketLayers(2).to(device)
     elif config['model_type'] == "MLP":
         model = MLP(16).to(device)
+    elif config['model_type'] == "LN_bracket_no_residual":
+        model = SL3InvariantBracketNoResidualConnectLayers(2).to(device)
 
     train(model, train_loader, test_loader, config, device)
 

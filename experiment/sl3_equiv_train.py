@@ -165,19 +165,26 @@ def main():
 
 
     # 5 input 
-    training_set = sl3EquivDataSetLieBracket(config['train_data_path'], device=device)
+    training_set = sl3EquivDataSetLieBracket2Input(config['train_data_path'], device=device)
     train_loader = DataLoader(dataset=training_set, batch_size=config['batch_size'],
                               shuffle=config['shuffle'])
 
-    test_set = sl3EquivDataSetLieBracket(config['test_data_path'], device=device)
+    test_set = sl3EquivDataSetLieBracket2Input(config['test_data_path'], device=device)
     test_loader = DataLoader(dataset=test_set, batch_size=config['batch_size'],
                              shuffle=config['shuffle'])
     
-    if config['model_type'] == "LN":
-        model = SL3EquivariantLayers(3).to(device)
+
+
+    if config['model_type'] == "LN_relu_bracket":
+        model = SL3EquivariantReluBracketLayers(2).to(device)
+    elif config['model_type'] == "LN_relu":
+        model = SL3EquivariantReluLayers(2).to(device)
+    elif config['model_type'] == "LN_bracket":
+        model = SL3EquivariantBracketLayers(2).to(device)
     elif config['model_type'] == "MLP":
-        model = MLP(24).to(device)
-    # model = SL3InvariantLayersTest(5).to(device)
+        model = MLP(16).to(device)
+    elif config['model_type'] == "LN_bracket_no_residual":
+        model = SL3EquivariantBracketNoResidualConnectLayers(2).to(device)
 
     train(model, train_loader, test_loader, config, device)
 
