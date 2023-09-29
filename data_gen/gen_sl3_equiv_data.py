@@ -30,7 +30,7 @@ def equivariant_function(x, y):
     # return sl3_killing_form(x,z)*lie_bracket(lie_bracket(x,y),z) + sl3_killing_form(y,z)*lie_bracket(z,y)
     # return sl3_killing_form(x,z)*lie_bracket(lie_bracket(x,y),z) + sl3_killing_form(y,z)*lie_bracket(z,y)
     # return x@y-y@x
-    return lie_bracket(lie_bracket(x, y), y) + sl3_killing_form(x, y)*lie_bracket(y, x)
+    return lie_bracket(lie_bracket(x, y), y) + lie_bracket(y, x)
     # return 1/4.0*lie_bracket(lie_bracket(x,y),z)
 
 
