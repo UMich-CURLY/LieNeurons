@@ -13,7 +13,6 @@ from einops import rearrange, repeat
 from einops.layers.torch import Rearrange
 
 
-from core.lie_group_util import *
 from core.lie_alg_util import *
 from core.lie_neurons_layers import *
 
@@ -26,15 +25,16 @@ class SL3InvariantLayers(nn.Module):
         share_nonlinearity = False
         self.ln_fc = LNLinearAndKillingRelu(
             in_channels, feat_dim, share_nonlinearity=share_nonlinearity)
-        self.ln_norm = LNBatchNorm(feat_dim, dim=3)
+        # self.ln_norm = LNBatchNorm(feat_dim, dim=3)
         # self.ln_fc2 = LNLinearAndKillingRelu(feat_dim, feat_dim,share_nonlinearity=share_nonlinearity)
-        self.ln_fc3 = LNLinearAndKillingRelu(feat_dim, feat_dim,share_nonlinearity=share_nonlinearity)
+        # self.ln_fc3 = LNLinearAndKillingRelu(
+        #     feat_dim, feat_dim, share_nonlinearity=share_nonlinearity)
         self.ln_inv = LNInvariantPooling(
             feat_dim, dir_dim=inv_dir_dim, method='self_killing')
-        self.fc = nn.Linear(feat_dim, feat_dim)
-        self.relu = nn.ReLU()
-        self.fc2 = nn.Linear(feat_dim, feat_dim)
-        self.fc3 = nn.Linear(feat_dim, feat_dim)
+        # self.fc = nn.Linear(feat_dim, feat_dim)
+        # self.relu = nn.ReLU()
+        # self.fc2 = nn.Linear(feat_dim, feat_dim)
+        # self.fc3 = nn.Linear(feat_dim, feat_dim)
         self.fc_final = nn.Linear(inv_dir_dim*feat_dim, 1, bias=True)
 
         # self.ln_fc = LNLinearAndLieBracket(in_channels, feat_dim,share_nonlinearity=share_nonlinearity)
@@ -63,19 +63,22 @@ class SL3InvariantLayers(nn.Module):
 
         return x_out
 
+
 class SL3InvariantReluBracketLayers(nn.Module):
     def __init__(self, in_channels):
         super(SL3InvariantReluBracketLayers, self).__init__()
         feat_dim = 256
         inv_dir_dim = 1
         share_nonlinearity = False
-        
+
         self.ln_fc = LNLinearAndKillingRelu(
             in_channels, feat_dim, share_nonlinearity=share_nonlinearity)
-        self.ln_fc_bracket = LNLinearAndLieBracket(feat_dim, feat_dim,share_nonlinearity=share_nonlinearity)
+        self.ln_fc_bracket = LNLinearAndLieBracket(
+            feat_dim, feat_dim, share_nonlinearity=share_nonlinearity)
         self.ln_inv = LNInvariantPooling(
             feat_dim, dir_dim=inv_dir_dim, method='self_killing')
         self.fc_final = nn.Linear(inv_dir_dim*feat_dim, 1, bias=True)
+
     def forward(self, x):
         '''
         x input of shape [B, F, 8, 1]
@@ -112,7 +115,7 @@ class SL3InvariantReluLayers(nn.Module):
         x_out = torch.reshape(self.fc_final(x_inv), (-1, 1))     # [B, 1]
 
         return x_out
-    
+
 
 class SL3InvariantBracketLayers(nn.Module):
     def __init__(self, in_channels):
@@ -121,7 +124,8 @@ class SL3InvariantBracketLayers(nn.Module):
         inv_dir_dim = 1
         share_nonlinearity = False
 
-        self.ln_fc_bracket = LNLinearAndLieBracket(in_channels, feat_dim,share_nonlinearity=share_nonlinearity)
+        self.ln_fc_bracket = LNLinearAndLieBracket(
+            in_channels, feat_dim, share_nonlinearity=share_nonlinearity)
         # self.ln_fc_bracket2 = LNLinearAndLieBracket(feat_dim, feat_dim,share_nonlinearity=share_nonlinearity)
         self.ln_inv = LNInvariantPooling(
             feat_dim, dir_dim=inv_dir_dim, method='self_killing')
@@ -138,7 +142,7 @@ class SL3InvariantBracketLayers(nn.Module):
         x_out = torch.reshape(self.fc_final(x_inv), (-1, 1))     # [B, 1]
 
         return x_out
-    
+
 
 class SL3InvariantBracketNoResidualConnectLayers(nn.Module):
     def __init__(self, in_channels):
@@ -147,7 +151,8 @@ class SL3InvariantBracketNoResidualConnectLayers(nn.Module):
         inv_dir_dim = 1
         share_nonlinearity = False
 
-        self.ln_fc_bracket = LNLinearAndLieBracketNoResidualConnect(in_channels, feat_dim,share_nonlinearity=share_nonlinearity)
+        self.ln_fc_bracket = LNLinearAndLieBracketNoResidualConnect(
+            in_channels, feat_dim, share_nonlinearity=share_nonlinearity)
         # self.ln_fc_bracket2 = LNLinearAndLieBracket(feat_dim, feat_dim,share_nonlinearity=share_nonlinearity)
         self.ln_inv = LNInvariantPooling(
             feat_dim, dir_dim=inv_dir_dim, method='self_killing')
@@ -164,6 +169,7 @@ class SL3InvariantBracketNoResidualConnectLayers(nn.Module):
         x_out = torch.reshape(self.fc_final(x_inv), (-1, 1))     # [B, 1]
 
         return x_out
+
 
 class SL3InvariantLayersTest(nn.Module):
     def __init__(self, in_channels):

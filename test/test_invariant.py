@@ -4,7 +4,6 @@ sys.path.append('.')  # nopep8
 import numpy as np
 import torch
 
-from core.lie_group_util import *
 from core.lie_neurons_layers import *
 from core.lie_alg_util import *
 from experiment.sl3_inv_layers import *

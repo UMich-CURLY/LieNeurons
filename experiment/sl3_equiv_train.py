@@ -16,7 +16,6 @@ import torch.optim as optim
 from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data import Dataset, DataLoader
 
-from core.lie_group_util import *
 from core.lie_neurons_layers import *
 from experiment.sl3_equiv_layers import *
 from data_loader.sl3_equiv_data_loader import *
@@ -163,17 +162,16 @@ def main():
     # load yaml file
     config = yaml.safe_load(open(args.training_config))
 
-
-    # 5 input 
-    training_set = sl3EquivDataSetLieBracket2Input(config['train_data_path'], device=device)
+    # 5 input
+    training_set = sl3EquivDataSetLieBracket2Input(
+        config['train_data_path'], device=device)
     train_loader = DataLoader(dataset=training_set, batch_size=config['batch_size'],
                               shuffle=config['shuffle'])
 
-    test_set = sl3EquivDataSetLieBracket2Input(config['test_data_path'], device=device)
+    test_set = sl3EquivDataSetLieBracket2Input(
+        config['test_data_path'], device=device)
     test_loader = DataLoader(dataset=test_set, batch_size=config['batch_size'],
                              shuffle=config['shuffle'])
-    
-
 
     if config['model_type'] == "LN_relu_bracket":
         model = SL3EquivariantReluBracketLayers(2).to(device)

@@ -16,7 +16,6 @@ import torch.optim as optim
 from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data import Dataset, DataLoader, IterableDataset
 
-from core.lie_group_util import *
 from core.lie_neurons_layers import *
 from experiment.platonic_solid_cls_layers import *
 from data_gen.gen_platonic_solids import *

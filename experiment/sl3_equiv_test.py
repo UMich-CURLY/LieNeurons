@@ -16,7 +16,6 @@ import torch.optim as optim
 from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data import Dataset, DataLoader
 
-from core.lie_group_util import *
 from core.lie_alg_util import *
 from core.lie_neurons_layers import *
 from experiment.sl3_equiv_layers import *
@@ -129,12 +128,17 @@ def main():
     elif config['model_type'] == "LN_bracket_no_residual":
         model = SL3EquivariantBracketNoResidualConnectLayers(2).to(device)
 
+    print("Using model: ", config['model_type'])
+    print("total number of parameters: ", sum(p.numel() for p in model.parameters()))
+
     # model = SL3InvariantLayersTest(2).to(device)
     checkpoint = torch.load(config['model_path'])
-    model.load_state_dict(checkpoint['model_state_dict'])
+    model.load_state_dict(checkpoint['model_state_dict'],strict=False)
 
     criterion = nn.MSELoss().to(device)
     test_loss_equiv, loss_non_conj_avg, diff_output_avg = test_equivariance(model, test_loader, criterion, config, device)
+    print("test_loss type:",type(test_loss_equiv))
+    # print("avg diff output type: ", diff_output_avg.dtype)
     print("test loss: ", test_loss_equiv)
     print("avg diff output: ", diff_output_avg)
     print("loss non conj avg: ", loss_non_conj_avg)

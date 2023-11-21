@@ -17,7 +17,6 @@ import torch.optim as optim
 from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data import Dataset, DataLoader, IterableDataset
 
-from core.lie_group_util import *
 from core.lie_neurons_layers import *
 from experiment.platonic_solid_cls_layers import *
 from data_gen.gen_platonic_solids import *
@@ -99,14 +98,17 @@ def main():
         model = MLP(288).to(device)
     elif config['model_type'] == "LN_bracket_no_residual":
         model = LNBracketNoResidualConnectPlatonicSolidClassifier(3).to(device)
-        
+    
+    print("Using model: ", config['model_type'])
+    print("total number of parameters: ", sum(p.numel() for p in model.parameters()))
+    
     checkpoint = torch.load(config['model_path'])
-    model.load_state_dict(checkpoint['model_state_dict'])
+    model.load_state_dict(checkpoint['model_state_dict'],strict=False)
 
     criterion = nn.CrossEntropyLoss().to(device)
     test_loss, test_acc, test_acc_non_conj = test_perspective(model, test_loader, criterion, config, device)
-    print("equivariant test loss: ", test_loss)
-    print("equivariant test acc: ", test_acc)
+    print("test loss: ", test_loss)
+    print("test with conjugate acc: ", test_acc)
     print("test without conjugate acc: ", "{:.4f}".format(test_acc_non_conj))
 
 if __name__ == "__main__":

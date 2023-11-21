@@ -16,7 +16,6 @@ import torch.optim as optim
 from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data import Dataset, DataLoader
 
-from core.lie_group_util import *
 from core.lie_neurons_layers import *
 from experiment.sl3_inv_layers import *
 from data_loader.sl3_inv_data_loader import *

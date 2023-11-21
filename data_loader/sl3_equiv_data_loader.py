@@ -11,7 +11,6 @@ from tqdm import tqdm
 from einops import rearrange, repeat
 from einops.layers.torch import Rearrange
 
-from core.lie_group_util import *
 from core.lie_neurons_layers import *
 
 

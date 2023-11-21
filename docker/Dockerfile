@@ -12,8 +12,13 @@ ENV DEBIAN_FRONTEND noninteractive
 # build essentials
 # RUN apt-get update && apt-get -y install cmake
 RUN apt-get update && apt-get install -y vim
-RUN apt-get install -y build-essential
+RUN apt-get install -y build-essential snap
 RUN apt-get update && apt-get install -y git-all
+# RUN add-apt-repository ppa:rmescandon/yq
+# RUN apt update
+# RUN snap install yq
+RUN wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/bin/yq &&\
+    chmod +x /usr/bin/yq
 
 # python essentials
 # Starting from numpy 1.24.0 np.float would pop up an error. 
@@ -35,3 +40,6 @@ RUN pip install einops
 
 # pytest
 RUN pip install pytest
+
+# setuptool
+RUN pip install setuptools==59.5.0

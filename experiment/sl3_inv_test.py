@@ -16,7 +16,6 @@ import torch.optim as optim
 from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data import Dataset, DataLoader
 
-from core.lie_group_util import *
 from core.lie_neurons_layers import *
 from experiment.sl3_inv_layers import *
 from data_loader.sl3_inv_data_loader import *
@@ -46,13 +45,18 @@ def test_invariance(model, test_loader, criterion, config, device):
         loss_sum = 0.0
         loss_non_conj_sum = 0.0
         diff_output_sum = 0.0
+        loss_all = []
+        loss_non_conj_all = []
+
         for i, sample in tqdm(enumerate(test_loader, start=0)):
             x = sample['x'].to(device)
             x_conj = sample['x_conjugate'].to(device)
             y = sample['y'].to(device)
 
             output_x = model(x)
-            loss_non_conj_sum += criterion(output_x, y).item()
+            loss_non_conj = criterion(output_x, y)
+            loss_non_conj_sum += loss_non_conj.item()
+            loss_non_conj_all.append(loss_non_conj.item())
             # print(output_x)
             # print(x_conj.shape)
             for j in range(x_conj.shape[1]):
@@ -60,6 +64,7 @@ def test_invariance(model, test_loader, criterion, config, device):
                 output_conj = model(x_conj_j)
                 diff_output = output_x - output_conj
                 loss = criterion(output_conj, y)
+                loss_all.append(loss.item())
                 loss_sum += loss.item()
                 diff_output_sum += torch.sum(torch.abs(diff_output))
                 # print(output_conj)
@@ -70,12 +75,17 @@ def test_invariance(model, test_loader, criterion, config, device):
             # print("y", y[0,:])
             # print(loss.item())
             # print("----------------------")
-
+        # print(loss_all)
+        # print(torch.Tensor(loss_all).shape)
+        # loss_avg2 = torch.mean(torch.Tensor(loss_all))
+        # print("loss_avg 2: ", loss_avg2)
+        loss_std = torch.std(torch.Tensor(loss_all))
+        loss_non_conj_std = torch.std(torch.Tensor(loss_non_conj_all))
         loss_avg = loss_sum/len(test_loader)/x_conj.shape[1]
         diff_output_avg = diff_output_sum/len(test_loader.dataset)/x_conj.shape[1]
         loss_non_conj_avg = loss_non_conj_sum/len(test_loader)
 
-    return loss_avg, loss_non_conj_avg, diff_output_avg
+    return loss_avg, loss_std, loss_non_conj_avg, loss_non_conj_std, diff_output_avg
 
 def main():
     # torch.autograd.set_detect_anomaly(True)
@@ -107,15 +117,21 @@ def main():
     elif config['model_type'] == "LN_bracket_no_residual":
         model = SL3InvariantBracketNoResidualConnectLayers(2).to(device)
 
+    print("Using model: ", config['model_type'])
+    print("total number of parameters: ", sum(p.numel() for p in model.parameters()))
     checkpoint = torch.load(config['model_path'])
-    model.load_state_dict(checkpoint['model_state_dict'])
+    model.load_state_dict(checkpoint['model_state_dict'],strict=False)
 
     criterion = nn.MSELoss().to(device)
     # test_loss = test(model, test_loader, criterion, config, device)
-    test_loss_inv, loss_non_conj_avg, diff_output_avg = test_invariance(model, test_loader, criterion, config, device)
+    test_loss_inv, test_loss_inv_std, loss_non_conj_avg, loss_non_conj_std, diff_output_avg = test_invariance(model, test_loader, criterion, config, device)
+
+    print("test_loss type:",type(test_loss_inv))
     print("test loss: ", test_loss_inv)
+    print("test loss std", test_loss_inv_std)
     print("avg diff output: ", diff_output_avg)
     print("loss non conj: ", loss_non_conj_avg)
+    print("loss non conj std: ", loss_non_conj_std)
 
 if __name__ == "__main__":
     main()

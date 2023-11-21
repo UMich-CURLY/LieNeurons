@@ -1,5 +1,3 @@
-from core.lie_group_util import *
-from core.lie_alg_util import *
 import os
 import sys
 import copy
@@ -11,6 +9,8 @@ import torch.nn.functional as F
 
 from einops import rearrange, repeat
 from einops.layers.torch import Rearrange
+
+from core.lie_alg_util import *
 
 sys.path.append('.')
 
@@ -97,8 +97,8 @@ class LNLieBracket(nn.Module):
             self.learn_dir2 = nn.Linear(in_channels, in_channels, bias=False)
 
         self.HatLayerSl3 = HatLayerSl3()
-        self.relu = LNKillingRelu(
-            in_channels, share_nonlinearity=share_nonlinearity)
+        # self.relu = LNKillingRelu(
+        #     in_channels, share_nonlinearity=share_nonlinearity)
 
 
     def forward(self, x):
