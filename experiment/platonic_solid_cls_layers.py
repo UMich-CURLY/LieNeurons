@@ -28,7 +28,7 @@ class LNPlatonicSolidClassifier(nn.Module):
             feat_dim, feat_dim, share_nonlinearity=share_nonlinearity)
         self.ln_pooling = LNMaxPool(
             feat_dim, abs_killing_form=False)  # [B, F, 8, 1]
-        self.ln_inv = LNInvariantPooling(feat_dim, method='self_killing')
+        self.ln_inv = LNInvariant(feat_dim, method='self_killing')
         self.fc_final = nn.Linear(feat_dim, 3, bias=False)
 
     def forward(self, x):
@@ -56,7 +56,7 @@ class LNReluPlatonicSolidClassifier(nn.Module):
             in_channels, feat_dim, share_nonlinearity=share_nonlinearity)
         self.ln_pooling = LNMaxPool(
             feat_dim, abs_killing_form=False)  # [B, F, 8, 1]
-        self.ln_inv = LNInvariantPooling(feat_dim, method='self_killing')
+        self.ln_inv = LNInvariant(feat_dim, method='self_killing')
         self.fc_final = nn.Linear(feat_dim, 3, bias=False)
 
     def forward(self, x):
@@ -83,7 +83,7 @@ class LNBracketPlatonicSolidClassifier(nn.Module):
         # self.ln_fc2 = LNLinearAndLieBracket(feat_dim, feat_dim,share_nonlinearity=share_nonlinearity)
         self.ln_pooling = LNMaxPool(
             feat_dim, abs_killing_form=False)  # [B, F, 8, 1]
-        self.ln_inv = LNInvariantPooling(feat_dim, method='self_killing')
+        self.ln_inv = LNInvariant(feat_dim, method='self_killing')
         self.fc_final = nn.Linear(feat_dim, 3, bias=False)
 
     def forward(self, x):
@@ -111,7 +111,7 @@ class LNReluBracketPlatonicSolidClassifier(nn.Module):
             feat_dim, feat_dim, share_nonlinearity=share_nonlinearity)
         self.ln_pooling = LNMaxPool(
             feat_dim, abs_killing_form=False)  # [B, F, 8, 1]
-        self.ln_inv = LNInvariantPooling(feat_dim, method='self_killing')
+        self.ln_inv = LNInvariant(feat_dim, method='self_killing')
         self.fc_final = nn.Linear(feat_dim, 3, bias=False)
 
     def forward(self, x):
@@ -139,7 +139,7 @@ class LNBracketNoResidualConnectPlatonicSolidClassifier(nn.Module):
         # self.ln_fc2 = LNLinearAndLieBracket(feat_dim, feat_dim,share_nonlinearity=share_nonlinearity)
         self.ln_pooling = LNMaxPool(
             feat_dim, abs_killing_form=False)  # [B, F, 8, 1]
-        self.ln_inv = LNInvariantPooling(feat_dim, method='self_killing')
+        self.ln_inv = LNInvariant(feat_dim, method='self_killing')
         self.fc_final = nn.Linear(feat_dim, 3, bias=False)
 
     def forward(self, x):

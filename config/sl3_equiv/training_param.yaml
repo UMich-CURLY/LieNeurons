@@ -32,7 +32,7 @@ update_every_batch: 1
 # initial_learning_rate: 0.0001
 # initial_learning_rate: 0.000003 
 # initial_learning_rate: 0.000001
-initial_learning_rate: 0.0001
+initial_learning_rate: 0.00001
 learning_rate_decay_rate: 0.0
 weight_decay_rate: 0.00
 num_epochs: 600

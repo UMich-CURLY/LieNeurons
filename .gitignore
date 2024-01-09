@@ -166,3 +166,6 @@ cython_debug/
 weights/
 logs/
 data/
+logs_rebuttal/
+training_all.txt
+eval_results.txt

@@ -29,7 +29,7 @@ class SL3InvariantLayers(nn.Module):
         # self.ln_fc2 = LNLinearAndKillingRelu(feat_dim, feat_dim,share_nonlinearity=share_nonlinearity)
         # self.ln_fc3 = LNLinearAndKillingRelu(
         #     feat_dim, feat_dim, share_nonlinearity=share_nonlinearity)
-        self.ln_inv = LNInvariantPooling(
+        self.ln_inv = LNInvariant(
             feat_dim, dir_dim=inv_dir_dim, method='self_killing')
         # self.fc = nn.Linear(feat_dim, feat_dim)
         # self.relu = nn.ReLU()
@@ -75,7 +75,7 @@ class SL3InvariantReluBracketLayers(nn.Module):
             in_channels, feat_dim, share_nonlinearity=share_nonlinearity)
         self.ln_fc_bracket = LNLinearAndLieBracket(
             feat_dim, feat_dim, share_nonlinearity=share_nonlinearity)
-        self.ln_inv = LNInvariantPooling(
+        self.ln_inv = LNInvariant(
             feat_dim, dir_dim=inv_dir_dim, method='self_killing')
         self.fc_final = nn.Linear(inv_dir_dim*feat_dim, 1, bias=True)
 
@@ -101,7 +101,7 @@ class SL3InvariantReluLayers(nn.Module):
         share_nonlinearity = False
         self.ln_fc = LNLinearAndKillingRelu(
             in_channels, feat_dim, share_nonlinearity=share_nonlinearity)
-        self.ln_inv = LNInvariantPooling(
+        self.ln_inv = LNInvariant(
             feat_dim, dir_dim=inv_dir_dim, method='self_killing')
         self.fc_final = nn.Linear(inv_dir_dim*feat_dim, 1, bias=True)
 
@@ -127,7 +127,7 @@ class SL3InvariantBracketLayers(nn.Module):
         self.ln_fc_bracket = LNLinearAndLieBracket(
             in_channels, feat_dim, share_nonlinearity=share_nonlinearity)
         # self.ln_fc_bracket2 = LNLinearAndLieBracket(feat_dim, feat_dim,share_nonlinearity=share_nonlinearity)
-        self.ln_inv = LNInvariantPooling(
+        self.ln_inv = LNInvariant(
             feat_dim, dir_dim=inv_dir_dim, method='self_killing')
         self.fc_final = nn.Linear(inv_dir_dim*feat_dim, 1, bias=True)
 
@@ -154,7 +154,7 @@ class SL3InvariantBracketNoResidualConnectLayers(nn.Module):
         self.ln_fc_bracket = LNLinearAndLieBracketNoResidualConnect(
             in_channels, feat_dim, share_nonlinearity=share_nonlinearity)
         # self.ln_fc_bracket2 = LNLinearAndLieBracket(feat_dim, feat_dim,share_nonlinearity=share_nonlinearity)
-        self.ln_inv = LNInvariantPooling(
+        self.ln_inv = LNInvariant(
             feat_dim, dir_dim=inv_dir_dim, method='self_killing')
         self.fc_final = nn.Linear(inv_dir_dim*feat_dim, 1, bias=True)
 
@@ -180,7 +180,7 @@ class SL3InvariantLayersTest(nn.Module):
         self.ln_norm = LNBatchNorm(feat_dim, dim=3)
         self.ln_fc2 = LNLinearAndKillingRelu(feat_dim, feat_dim)
         self.ln_fc3 = LNLinearAndKillingRelu(feat_dim, feat_dim)
-        self.ln_inv = LNInvariantPooling(method='killing')
+        self.ln_inv = LNInvariant(method='killing')
         self.fc_in = nn.Linear(in_channels, feat_dim)
         self.fc = nn.Linear(feat_dim, feat_dim)
         self.fc_no_inv = nn.Linear(8*feat_dim, feat_dim)

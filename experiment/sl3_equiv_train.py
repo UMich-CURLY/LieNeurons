@@ -73,7 +73,7 @@ def train(model, train_loader, test_loader, config, device='cpu'):
     # else:
     start_epoch = 0
 
-    best_loss = 1000000000
+    best_loss = float("inf")
     for epoch in range(start_epoch, config['num_epochs']):
         running_loss = 0.0
         loss_sum = 0.0

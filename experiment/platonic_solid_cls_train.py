@@ -79,7 +79,7 @@ def train(model, train_loader, test_loader, config, device='cpu'):
     else:
         start_iter = 0
 
-    best_loss = 1000000000.0
+    best_loss = float("inf")
     best_acc = 0.0
     running_loss = 0.0
     loss_sum = 0.0

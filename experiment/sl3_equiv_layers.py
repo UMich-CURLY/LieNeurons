@@ -170,7 +170,7 @@ class SL3InvariantLayersTest(nn.Module):
         self.ln_norm = LNBatchNorm(feat_dim, dim=3)
         self.ln_fc2 = LNLinearAndKillingRelu(feat_dim, feat_dim)
         self.ln_fc3 = LNLinearAndKillingRelu(feat_dim, feat_dim)
-        self.ln_inv = LNInvariantPooling(method='killing')
+        self.ln_inv = LNInvariant(method='killing')
         self.fc_in = nn.Linear(in_channels, feat_dim)
         self.fc = nn.Linear(feat_dim, feat_dim)
         self.fc_no_inv = nn.Linear(8*feat_dim, feat_dim)

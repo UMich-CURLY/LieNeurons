@@ -1,4 +1,4 @@
-train_data_path: "/home/justin/code/LieNeurons/data/sl3_inv_data/sl3_inv_10000_s_05_train_data.npz"
+train_data_path: "/home/justin/code/LieNeurons/data/sl3_inv_data/sl3_inv_10000_s_05_augmented_train_data.npz"
 test_data_path: "/home/justin/code/LieNeurons/data/sl3_inv_data/sl3_inv_10000_s_05_test_data.npz"
 # train_data_path: "/home/justin/code/LieNeurons/data/sl3_inv_data/sl3_inv_10000_s_05_train_data.npz"
 # test_data_path: "/home/justin/code/LieNeurons/data/sl3_inv_data/sl3_inv_10000_s_05_test_data.npz"
@@ -9,8 +9,8 @@ test_data_path: "/home/justin/code/LieNeurons/data/sl3_inv_data/sl3_inv_10000_s_
 model_description: "SL3InvariantFunctionFitting"
 print_freq: 100
 model_type: "MLP"
-model_save_path: "/home/justin/code/LieNeurons/weights/rebuttal_inv_mlp_4"
-log_writer_path: "/home/justin/code/LieNeurons/logs/rebuttal_inv_mlp_4"
+model_save_path: "/home/justin/code/LieNeurons/weights/rebuttal_inv_mlp_augmented_5"
+log_writer_path: "/home/justin/code/LieNeurons/logs/rebuttal_inv_mlp_augmented_5"
 # model_type: "LN_relu_bracket"
 # model_save_path: "/home/justin/code/LieNeurons/weights/1120_one_relu_one_bracket"
 # log_writer_path: "/home/justin/code/LieNeurons/logs/1120_one_relu_one_bracket"

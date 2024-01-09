@@ -28,7 +28,7 @@ if __name__ == "__main__":
     # SL(3) transformation
     Y = torch.linalg.matrix_exp(hat_layer(y))
     
-    # model = LNInvariantPooling(num_features,method='learned_killing')
+    # model = LNInvariant(num_features,method='learned_killing')
     model = SL3InvariantLayers(num_features)
 
     x_hat = hat_layer(x.transpose(2, -1))

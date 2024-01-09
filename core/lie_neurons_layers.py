@@ -15,7 +15,7 @@ from core.lie_alg_util import *
 sys.path.append('.')
 
 
-EPS = 1e-3
+EPS = 1e-6
 
 
 class LNLinear(nn.Module):
@@ -32,15 +32,17 @@ class LNLinear(nn.Module):
 
 
 class LNKillingRelu(nn.Module):
-    def __init__(self, in_channels, share_nonlinearity=False, leaky_relu=False,negative_slope=0.2):
+    def __init__(self, in_channels, algebra_type='sl3', share_nonlinearity=False, leaky_relu=False, negative_slope=0.2):
         super(LNKillingRelu, self).__init__()
         self.share_nonlinearity = share_nonlinearity
+
         if share_nonlinearity == True:
             self.learn_dir = nn.Linear(in_channels, 1, bias=False)
         else:
             self.learn_dir = nn.Linear(in_channels, in_channels, bias=False)
 
-        self.HatLayerSl3 = HatLayerSl3()
+        self.HatLayer = HatLayer(algebra_type)
+        self.algebra_type = algebra_type
         self.leaky_relu = leaky_relu
         self.negative_slope = negative_slope
 
@@ -48,7 +50,7 @@ class LNKillingRelu(nn.Module):
         '''
         x: point features of shape [B, F, 8, N]
         '''
-        B, F, _, N = x.shape
+        # B, F, _, N = x.shape
         x_out = torch.zeros_like(x)
 
         d = self.learn_dir(x.transpose(1, -1)).transpose(1, -1)
@@ -56,39 +58,27 @@ class LNKillingRelu(nn.Module):
         x = x.transpose(2, -1)
         d = d.transpose(2, -1)
 
-        x_hat = self.HatLayerSl3(x)
-        d_hat = self.HatLayerSl3(d)
-        kf_xd = killingform_sl3(x_hat, d_hat)
-        # kf_dd = killingform_sl3(d_hat, d_hat)
-        # kf_dd_norm = torch.where(
-        # kf_dd < 0, torch.sqrt(-kf_dd)+EPS, torch.sqrt(kf_dd) + EPS)
-        # x_out = torch.where(kf_xd < 0, x, x - (-kf_xd)/(-kf_dd) * d)
+        x_hat = self.HatLayer(x)
+        d_hat = self.HatLayer(d)
+        kf_xd = killingform(x_hat, d_hat, self.algebra_type)
         
         if self.leaky_relu:
             mask = (kf_xd <= 0).float()
-            # print(x.shape)
             x_out = self.negative_slope * x + (1-self.negative_slope ) \
                 *(mask*x + (1-mask)*(x-(-kf_xd)*d))
         else:
             x_out = torch.where(kf_xd <= 0, x, x - (-kf_xd) * d)
-        # x_out = torch.where(kf_xd < 0, x, torch.zeros_like(x))
-
-        # x_out = x
-        # print("------------------")
-        # print("x", x)
-        # print("kf", kf_xd)
-        # print("x_out", x_out)
-        # print("d", d)
-        # x_out = torch.where(kf_xd < 0, x, x - (-kf_xd) * d)
         x_out = x_out.transpose(2, -1)
 
         return x_out
 
 
 class LNLieBracket(nn.Module):
-    def __init__(self, in_channels, share_nonlinearity=False):
+    def __init__(self, in_channels, algebra_type='sl3', share_nonlinearity=False):
         super(LNLieBracket, self).__init__()
         self.share_nonlinearity = share_nonlinearity
+        self.algebra_type = algebra_type
+
         if share_nonlinearity == True:
             self.learn_dir = nn.Linear(in_channels, 1, bias=False)
             self.learn_dir2 = nn.Linear(in_channels, 1, bias=False)
@@ -96,16 +86,14 @@ class LNLieBracket(nn.Module):
             self.learn_dir = nn.Linear(in_channels, in_channels, bias=False)
             self.learn_dir2 = nn.Linear(in_channels, in_channels, bias=False)
 
-        self.HatLayerSl3 = HatLayerSl3()
-        # self.relu = LNKillingRelu(
-        #     in_channels, share_nonlinearity=share_nonlinearity)
+        self.HatLayer =  HatLayer(algebra_type)
 
 
     def forward(self, x):
         '''
         x: point features of shape [B, F, 8, N]
         '''
-        B, F, _, N = x.shape
+        # B, F, _, N = x.shape
 
         d = self.learn_dir(x.transpose(1, -1)).transpose(1, -1)
         d2 = self.learn_dir2(x.transpose(1, -1)).transpose(1, -1)
@@ -113,17 +101,19 @@ class LNLieBracket(nn.Module):
         d = d.transpose(2, -1)
         d2 = d2.transpose(2,-1)
 
-        d_hat = self.HatLayerSl3(d)
-        d2_hat = self.HatLayerSl3(d2)
+        d_hat = self.HatLayer(d)
+        d2_hat = self.HatLayer(d2)
         lie_bracket = torch.matmul(d2_hat, d_hat) - torch.matmul(d_hat,d2_hat)
-        x_out = x + vee_sl3(lie_bracket).transpose(2, -1)
+        x_out = x + vee(lie_bracket,self.algebra_type).transpose(2, -1)
         return x_out
     
 
 class LNLieBracketNoResidualConnect(nn.Module):
-    def __init__(self, in_channels, share_nonlinearity=False):
+    def __init__(self, in_channels, algebra_type='sl3', share_nonlinearity=False):
         super(LNLieBracketNoResidualConnect, self).__init__()
         self.share_nonlinearity = share_nonlinearity
+        self.algebra_type = algebra_type
+
         if share_nonlinearity == True:
             self.learn_dir = nn.Linear(in_channels, 1, bias=False)
             self.learn_dir2 = nn.Linear(in_channels, 1, bias=False)
@@ -131,7 +121,7 @@ class LNLieBracketNoResidualConnect(nn.Module):
             self.learn_dir = nn.Linear(in_channels, in_channels, bias=False)
             self.learn_dir2 = nn.Linear(in_channels, in_channels, bias=False)
 
-        self.HatLayerSl3 = HatLayerSl3()
+        self.HatLayer = HatLayer()
         self.relu = LNKillingRelu(
             in_channels, share_nonlinearity=share_nonlinearity)
 
@@ -140,7 +130,7 @@ class LNLieBracketNoResidualConnect(nn.Module):
         '''
         x: point features of shape [B, F, 8, N]
         '''
-        B, F, _, N = x.shape
+        # B, F, _, N = x.shape
 
         d = self.learn_dir(x.transpose(1, -1)).transpose(1, -1)
         d2 = self.learn_dir2(x.transpose(1, -1)).transpose(1, -1)
@@ -148,20 +138,20 @@ class LNLieBracketNoResidualConnect(nn.Module):
         d = d.transpose(2, -1)
         d2 = d2.transpose(2,-1)
 
-        d_hat = self.HatLayerSl3(d)
-        d2_hat = self.HatLayerSl3(d2)
+        d_hat = self.HatLayer(d)
+        d2_hat = self.HatLayer(d2)
         lie_bracket = torch.matmul(d2_hat, d_hat) - torch.matmul(d_hat,d2_hat)
-        x_out = vee_sl3(lie_bracket).transpose(2, -1)
+        x_out = vee(lie_bracket,self.algebra_type).transpose(2, -1)
         return x_out
 
 class LNLinearAndKillingRelu(nn.Module):
-    def __init__(self, in_channels, out_channels, share_nonlinearity=False, leaky_relu=False,negative_slope=0.2):
+    def __init__(self, in_channels, out_channels, algebra_type='sl3', share_nonlinearity=False, leaky_relu=False,negative_slope=0.2):
         super(LNLinearAndKillingRelu, self).__init__()
         self.share_nonlinearity = share_nonlinearity
 
         self.linear = LNLinear(in_channels, out_channels)
         self.leaky_relu = LNKillingRelu(
-            out_channels, share_nonlinearity=share_nonlinearity, leaky_relu=leaky_relu, negative_slope=negative_slope)
+            out_channels, algebra_type=algebra_type, share_nonlinearity=share_nonlinearity, leaky_relu=leaky_relu, negative_slope=negative_slope)
 
     def forward(self, x):
         '''
@@ -175,13 +165,13 @@ class LNLinearAndKillingRelu(nn.Module):
         return x_out
 
 class LNLinearAndLieBracket(nn.Module):
-    def __init__(self, in_channels, out_channels, share_nonlinearity=False):
+    def __init__(self, in_channels, out_channels, algebra_type='sl3', share_nonlinearity=False):
         super(LNLinearAndLieBracket, self).__init__()
         self.share_nonlinearity = share_nonlinearity
 
         self.linear = LNLinear(in_channels, out_channels)
         self.liebracket = LNLieBracket(
-            out_channels, share_nonlinearity=share_nonlinearity)
+            out_channels, algebra_type=algebra_type, share_nonlinearity=share_nonlinearity)
 
     def forward(self, x):
         '''
@@ -195,13 +185,13 @@ class LNLinearAndLieBracket(nn.Module):
         return x_out
 
 class LNLinearAndLieBracketNoResidualConnect(nn.Module):
-    def __init__(self, in_channels, out_channels, share_nonlinearity=False):
+    def __init__(self, in_channels, out_channels, algebra_type='sl3', share_nonlinearity=False):
         super(LNLinearAndLieBracketNoResidualConnect, self).__init__()
         self.share_nonlinearity = share_nonlinearity
 
         self.linear = LNLinear(in_channels, out_channels)
         self.liebracket = LNLieBracketNoResidualConnect(
-            out_channels, share_nonlinearity=share_nonlinearity)
+            out_channels, algebra_type=algebra_type, share_nonlinearity=share_nonlinearity)
 
     def forward(self, x):
         '''
@@ -215,26 +205,25 @@ class LNLinearAndLieBracketNoResidualConnect(nn.Module):
         return x_out
 
 class LNMaxPool(nn.Module):
-    def __init__(self, in_channels, abs_killing_form=False):
+    def __init__(self, in_channels, algebra_type='sl3',abs_killing_form=False):
         super(LNMaxPool, self).__init__()
         self.learn_dir = nn.Linear(in_channels, in_channels, bias=False)
         self.absolute = abs_killing_form
-        self.hat_layer = HatLayerSl3()
+        self.algebra_type = algebra_type
+        self.hat_layer = HatLayer(algebra_type=algebra_type)
 
     def forward(self, x):
         '''
         x: point features of shape [B, N_feat, 3, N_samples, ...]
         '''
         B, F, K, N = x.shape
-        # killing_forms = torch.zeros([B, F, N])
 
         d = self.learn_dir(x.transpose(1, -1)).transpose(1, -1)
 
         x_hat = self.hat_layer(x.transpose(2, -1))
         d_hat = self.hat_layer(d.transpose(2, -1))
-        killing_forms = killingform_sl3(x_hat, d_hat).squeeze(-1)
+        killing_forms = killingform(x_hat, d_hat, self.algebra_type).squeeze(-1)
 
-        # killing_forms = compute_killing_form(x, d)
 
         if not self.absolute:
             idx = killing_forms.max(dim=-1, keepdim=False)[1]
@@ -248,16 +237,16 @@ class LNMaxPool(nn.Module):
 
 
 class LNLinearAndKillingReluAndPooling(nn.Module):
-    def __init__(self, in_channels, out_channels, share_nonlinearity=False, abs_killing_form=False,
+    def __init__(self, in_channels, out_channels, algebra_type='sl3', share_nonlinearity=False, abs_killing_form=False,
                  use_batch_norm=False, dim=5):
         super(LNLinearAndKillingReluAndPooling, self).__init__()
         self.share_nonlinearity = share_nonlinearity
 
         self.linear = LNLinear(in_channels, out_channels)
         self.leaky_relu = LNKillingRelu(
-            out_channels, share_nonlinearity=share_nonlinearity)
+            out_channels, algebra_type=algebra_type, share_nonlinearity=share_nonlinearity)
         self.max_pool = LNMaxPool(
-            out_channels, abs_killing_form=abs_killing_form)
+            out_channels, algebra_type=algebra_type, abs_killing_form=abs_killing_form)
         self.use_batch_norm = use_batch_norm
 
         if use_batch_norm:
@@ -281,7 +270,7 @@ class LNLinearAndKillingReluAndPooling(nn.Module):
 
 
 class LNBatchNorm(nn.Module):
-    def __init__(self, num_features, dim, affine=False, momentum=0.1):
+    def __init__(self, num_features, dim, algebra_type='sl3', affine=False, momentum=0.1):
         super(LNBatchNorm, self).__init__()
         self.dim = dim
         if dim == 3 or dim == 4:
@@ -289,7 +278,8 @@ class LNBatchNorm(nn.Module):
         elif dim == 5:
             self.bn = nn.BatchNorm2d(num_features, affine=affine, momentum=momentum)
 
-        self.hat_layer = HatLayerSl3()
+        self.hat_layer = HatLayer(algebra_type=algebra_type)
+        self.algebra_type = algebra_type
 
     def forward(self, x):
         '''
@@ -297,7 +287,7 @@ class LNBatchNorm(nn.Module):
         '''
 
         x_hat = self.hat_layer(x.transpose(2, -1))
-        kf = killingform_sl3(x_hat, x_hat)
+        kf = killingform(x_hat, x_hat,algebra_type=self.algebra_type)
         # b, f, n, _, _ = x_hat.shape
         # kf = rearrange(torch.det(
         #         rearrange(x_hat, 'b f n m1 m2 -> (b f n) m1 m2')), '(b f n) -> b f n 1', b=b, f=f, n=n)
@@ -319,14 +309,15 @@ class LNBatchNorm(nn.Module):
         return x
 
 
-class LNInvariantPooling(nn.Module):
-    def __init__(self, in_channel, dir_dim=8, method='learned_killing'):
-        super(LNInvariantPooling, self).__init__()
+class LNInvariant(nn.Module):
+    def __init__(self, in_channel, algebra_type='sl3', dir_dim=8, method='learned_killing'):
+        super(LNInvariant, self).__init__()
 
-        self.hat_layer = HatLayerSl3()
+        self.hat_layer = HatLayer(algebra_type=algebra_type)
         self.learned_dir = LNLinearAndKillingRelu(
             in_channel, dir_dim, share_nonlinearity=True)
         self.method = method
+        self.algebra_type = algebra_type
 
     def forward(self, x):
         '''
@@ -335,9 +326,9 @@ class LNInvariantPooling(nn.Module):
         x_hat = self.hat_layer(x.transpose(2, -1))
         if self.method == 'learned_killing':
             d_hat = self.hat_layer(self.learned_dir(x).transpose(2, -1))
-            x_out = killingform_sl3(x_hat, d_hat, feature_wise=True)
+            x_out = killingform(x_hat, d_hat, algebra_type=self.algebra_type,feature_wise=True)
         elif self.method == 'self_killing':
-            x_out = killingform_sl3(x_hat, x_hat)
+            x_out = killingform(x_hat, x_hat,algebra_type=self.algebra_type)
         elif self.method == 'det':
             b, f, n, _, _ = x_hat.shape
             x_out = rearrange(torch.det(

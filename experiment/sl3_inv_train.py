@@ -73,7 +73,7 @@ def train(model, train_loader, test_loader, config, device='cpu'):
     # else:
     start_epoch = 0
 
-    best_loss = 1000000000
+    best_loss = float("inf")
     for epoch in range(start_epoch, config['num_epochs']):
         running_loss = 0.0
         loss_sum = 0.0
@@ -106,7 +106,6 @@ def train(model, train_loader, test_loader, config, device='cpu'):
 
 #        scheduler.step()
 
-        # train_top1, train_top5, _ = validate(train_loader, model, criterion, config, device)
 
         train_loss = loss_sum/len(train_loader)
 
@@ -130,9 +129,6 @@ def train(model, train_loader, test_loader, config, device='cpu'):
             torch.save(state, config['model_save_path'] +
                        '_best_test_loss_acc.pt')
         print("------------------------------")
-        # print("Finished epoch %d / %d, training top 1 acc: %.4f, training top 5 acc: %.4f, \
-        #       validation top1 acc: %.4f, validation top 5 acc: %.4f" %\
-        #     (epoch, config['num_epochs'], train_top1, train_top5, val_top1, val_top5))
         print("Finished epoch %d / %d, train loss: %.4f test loss: %.4f" %
               (epoch, config['num_epochs'], train_loss, test_loss))
 
@@ -170,20 +166,6 @@ def main():
     test_set = sl3InvDataSet2Input(config['test_data_path'], device=device)
     test_loader = DataLoader(dataset=test_set, batch_size=config['batch_size'],
                              shuffle=config['shuffle'])
-    
-    # model = SL3InvariantLayers(2).to(device)
-    # # model = SL3InvariantLayersTest(2).to(device)
-    # # model = MLP(16).to(device)
-
-
-    # 5 input 
-    # training_set = sl3InvDataSet5Input(config['train_data_path'], device=device)
-    # train_loader = DataLoader(dataset=training_set, batch_size=config['batch_size'],
-    #                           shuffle=config['shuffle'])
-
-    # test_set = sl3InvDataSet5Input(config['test_data_path'], device=device)
-    # test_loader = DataLoader(dataset=test_set, batch_size=config['batch_size'],
-    #                          shuffle=config['shuffle'])
 
 
     if config['model_type'] == "LN_relu_bracket":
