@@ -55,17 +55,51 @@ class HatLayer(torch.nn.Module):
             
             self.register_buffer('E_bases', E_bases)
 
+        elif algebra_type == 'se3':
+            # we use the order of v = [t, \omega]^T
+
+            E1 = torch.Tensor([[0, 0, 0, 1],
+                            [0, 0, 0, 0],
+                            [0, 0, 0, 0],
+                            [0, 0, 0, 0]])
+            E2 = torch.Tensor([[0, 0, 0, 0],
+                            [0, 0, 0, 1],
+                            [0, 0, 0, 0],
+                            [0, 0, 0, 0]])
+            E3 = torch.Tensor([[0, 0, 0, 0],
+                            [0, 0, 0, 0],
+                            [0, 0, 0, 1],
+                            [0, 0, 0, 0]])
+            E4 = torch.Tensor([[0, 0, 0, 0],
+                            [0, 0, -1, 0],
+                            [0, 1, 0, 0],
+                            [0, 0, 0, 0]])
+            E5 = torch.Tensor([[0, 0, 1, 0],
+                            [0, 0, 0, 0],
+                            [-1, 0, 0, 0],
+                            [0, 0, 0, 0]])
+            E6 = torch.Tensor([[0, -1, 0, 0],
+                            [1, 0, 0, 0],
+                            [0, 0, 0, 0],
+                            [0, 0, 0, 0]])
+
+            E_bases = torch.stack(
+                [E1,E2,E3,E4,E5,E6], dim=0)  # [6,3,3]
+            self.register_buffer('E_bases', E_bases)
+
     def forward(self, v):
         """
         v: a tensor of arbitrary shape with the last dimension of size k
         """
         return (v[..., None, None]*self.E_bases).sum(dim=-3)
 
-def vee(M, algebra='sl3'):
-    if algebra == 'so3':
+def vee(M, algebra_type='sl3'):
+    if algebra_type == 'so3':
         return vee_so3(M)
-    elif algebra == 'sl3':
+    elif algebra_type == 'sl3':
         return vee_sl3(M)
+    elif algebra_type == 'se3':
+        return vee_se3(M)
 
 def vee_so3(M):
     # [0 , -z, y ]
@@ -91,6 +125,21 @@ def vee_sl3(M):
 
     v[..., 1] = 0.5*(M[..., 0, 1] + M[..., 1, 0])
     v[..., 2] = 0.5*(M[..., 1, 0] - M[..., 0, 1])
+    return v
+
+def vee_se3(M):
+    # [0 ,  -wz,  wy,  tx]
+    # [wz ,   0, -wx,  ty]
+    # [-wy,  wx,   0,  tz]
+    # [  0,   0,   0,   0]
+    v = torch.zeros(M.shape[:-2]+(6,)).to(M.device)
+
+    v[..., 0] = M[..., 0, 3]
+    v[..., 1] = M[..., 1, 3]
+    v[..., 2] = M[..., 2, 3]
+    v[..., 3] = M[..., 2, 1]
+    v[..., 4] = M[..., 0, 2]
+    v[..., 5] = M[..., 1, 0]
     return v
 
 def killingform(x_hat, d_hat, algebra_type='sl3', feature_wise=False):
@@ -128,69 +177,3 @@ def killingform_sl3(x_hat, d_hat, feature_wise=False):
         return kf
     # return 6*torch.einsum('...ii', torch.matmul(x_hat,d_hat))[..., None]  # [B,F,N,1] equivalent to the above
 
-
-class HatLayerSO3(torch.nn.Module):
-    def __init__(self):
-        super(HatLayerSO3, self).__init__()
-
-        Ex = torch.Tensor([[0, 0, 0],
-                           [0, 0, -1],
-                           [0, 1, 0]])
-        Ey = torch.Tensor([[0, 0, 1],
-                           [0, 0, 0],
-                           [-1, 0, 0]])
-        Ez = torch.Tensor([[0, -1, 0],
-                           [1, 0, 0],
-                           [0, 0, 0]])
-
-        E_bases = torch.stack(
-            [Ex, Ey, Ez], dim=0)  # [8,3,3]
-        self.register_buffer('E_bases', E_bases)
-
-    def forward(self, v):
-        """
-        v: a tensor of arbitrary shape with the last dimension of size 3
-        """
-
-        # print("v",v.shape)
-        # print("b",self.E_bases.shape)
-        return (v[..., None, None]*self.E_bases).sum(dim=-3)
-    
-class HatLayerSl3(torch.nn.Module):
-    def __init__(self):
-        super(HatLayerSl3, self).__init__()
-
-        E1 = torch.Tensor([[1, 0, 0],
-                           [0, -1, 0],
-                           [0, 0, 0]])
-        E2 = torch.Tensor([[0, 1, 0],
-                           [1, 0, 0],
-                           [0, 0, 0]])
-        E3 = torch.Tensor([[0, -1, 0],
-                           [1, 0, 0],
-                           [0, 0, 0]])
-        E4 = torch.Tensor([[1, 0, 0],
-                           [0, 1, 0],
-                           [0, 0, -2]])
-        E5 = torch.Tensor([[0, 0, 1],
-                           [0, 0, 0],
-                           [0, 0, 0]])
-        E6 = torch.Tensor([[0, 0, 0],
-                           [0, 0, 1],
-                           [0, 0, 0]])
-        E7 = torch.Tensor([[0, 0, 0],
-                           [0, 0, 0],
-                           [1, 0, 0]])
-        E8 = torch.Tensor([[0, 0, 0],
-                           [0, 0, 0],
-                           [0, 1, 0]])
-        E_bases = torch.stack(
-            [E1, E2, E3, E4, E5, E6, E7, E8], dim=0)  # [8,3,3]
-        self.register_buffer('E_bases', E_bases)
-
-    def forward(self, v):
-        """
-        v: a tensor of arbitrary shape with the last dimension of size 8
-        """
-
-        return (v[..., None, None]*self.E_bases).sum(dim=-3)

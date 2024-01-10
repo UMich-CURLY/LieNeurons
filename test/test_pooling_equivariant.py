@@ -19,7 +19,7 @@ if __name__ == "__main__":
                      ).reshape(1, num_features, 8, num_points)
     y = torch.Tensor(np.random.rand(8))
 
-    hat_layer = HatLayerSl3()
+    hat_layer = HatLayer()
 
     # SL(3) transformation
     Y = torch.linalg.matrix_exp(hat_layer(y))

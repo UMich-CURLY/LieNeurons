@@ -7,9 +7,8 @@ print_freq: 100
 
 # model_type: "LN_relu_bracket"
 # model_path: "/home/justin/code/LieNeurons/weights/0928_equiv_one_relu_one_bracket_final_best_test_loss_acc.pt"
-
-model_type: "LN_relu"
-model_path: "/home/justin/code/LieNeurons/weights/1119_equiv_one_relu_best_test_loss_acc.pt"
+model_type: "MLP"
+model_path: "/home/justin/code/LieNeurons/weights/rebuttal_equiv_mlp_augmented_5_best_test_loss_acc.pt"
 # model_type: "MLP"
 # model_path: "/home/justin/code/LieNeurons/weights/rebuttal_equiv_mlp_augmented_5_best_test_loss_acc.pt"
 # model_type: "MLP"

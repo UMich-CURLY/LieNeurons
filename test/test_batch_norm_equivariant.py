@@ -18,7 +18,7 @@ if __name__ == "__main__":
     batch_size = 20
     rnd_scale = 0.5
 
-    hat_layer = HatLayerSl3()
+    hat_layer = HatLayer()
 
     x = torch.Tensor(np.random.uniform(-rnd_scale, rnd_scale, (batch_size, num_features, 8, num_points))).reshape(
         batch_size, num_features, 8, num_points)
