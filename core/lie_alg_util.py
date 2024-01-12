@@ -175,5 +175,6 @@ def killingform_sl3(x_hat, d_hat, feature_wise=False):
         kf = rearrange(kf, 'b f d n -> b (f d) n 1')
         
         return kf
-    # return 6*torch.einsum('...ii', torch.matmul(x_hat,d_hat))[..., None]  # [B,F,N,1] equivalent to the above
 
+def lie_bracket(x, y):
+    return x@y - y@x
