@@ -12,7 +12,7 @@ from core.lie_group_util import *
 if __name__ == "__main__":
 
     data_saved_path = "data/so3_bch_data/"
-    data_name = "sl3_bch_10"
+    data_name = "so3_bch_10000"
     gen_augmented_training_data = False
 
     num_training = 10000

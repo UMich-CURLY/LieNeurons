@@ -46,9 +46,9 @@ class so3BchDataSet(Dataset):
 if __name__ == "__main__":
 
     DataLoader = so3BchDataSet(
-        "data/so3_bch_data/sl3_bch_10000_train_data.npz")
+        "data/so3_bch_data/so3_bch_10000_train_data.npz")
 
-    hat = HatLayer(algebra_type='so3').to('cuda')
+    hat = HatLayer(algebra_type='so3').to('cpu')
     print(DataLoader.x1.shape)
     print(DataLoader.x2.shape)
     print(DataLoader.x.shape)
@@ -56,12 +56,12 @@ if __name__ == "__main__":
 
     sum = 0
     for i, samples in tqdm(enumerate(DataLoader, start=0)):
-        input_data = samples['x']
+        input_data = samples['x'].to('cpu')
         R1 = exp_so3(hat(input_data[0, :, :].squeeze(-1)))
         R2 = exp_so3(hat(input_data[1, :, :].squeeze(-1)))
         v3 = vee(log_SO3(torch.matmul(R1,R2)),algebra_type='so3')
 
-        y = samples['y']
+        y = samples['y'].to('cpu')
         # print(torch.trace(hat(y)))
         
 
