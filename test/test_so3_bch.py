@@ -31,7 +31,7 @@ if __name__ == "__main__":
     R2 = exp_so3(K2[0,:,:])
 
     R3 = R1@R2
-
+    print("R3:", R3)
     K3 = log_SO3(R3)
     K3_BCH = BCH_approx(K1[0,:,:],K2[0,:,:])
     K3_BCH_SO3 = BCH_so3(K1[0,:,:],K2[0,:,:])
