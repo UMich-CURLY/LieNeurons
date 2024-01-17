@@ -12,7 +12,7 @@ from core.lie_group_util import *
 if __name__ == "__main__":
 
     data_saved_path = "data/so3_bch_data/"
-    data_name = "sl3_bch_10000"
+    data_name = "sl3_bch_10"
     gen_augmented_training_data = False
 
     num_training = 10000
@@ -53,7 +53,7 @@ if __name__ == "__main__":
         R1 = exp_so3(K1[0,:,:])
         R2 = exp_so3(K2[0,:,:])
 
-        R3 = R1@R2
+        R3 = torch.matmul(R1,R2)
         v3 = vee(log_SO3(R3), algebra_type='so3')
 
         x1[i,:] = v1
@@ -115,7 +115,7 @@ if __name__ == "__main__":
         R1 = exp_so3(K1[0,:,:])
         R2 = exp_so3(K2[0,:,:])
 
-        R3 = R1@R2
+        R3 = torch.matmul(R1,R2)
         v3 = vee(log_SO3(R3), algebra_type='so3')
 
         x1[i,:] = v1

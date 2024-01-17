@@ -33,7 +33,7 @@ def exp_hat_and_so3(w):
   return I + (torch.sin(theta)/theta)*A + ((1-torch.cos(theta))/(theta*theta))*torch.matmul(A,A)
 
 def exp_so3(A):
-  I = torch.eye(3)
+  I = torch.eye(3).to(A.device)
   theta = torch.sqrt(-torch.trace(A@A)/2.0)
   return I + (torch.sin(theta)/theta)*A + ((1-torch.cos(theta))/(theta*theta))*torch.matmul(A,A)
 
