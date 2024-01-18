@@ -49,10 +49,9 @@ def BCH_approx(X,Y):
 def BCH_so3(X,Y):
   x = vee_so3(X)
   y = vee_so3(Y)
-  theta = torch.sqrt(-torch.trace(X@X)/2.0)
-  phi = torch.sqrt(-torch.trace(Y@Y)/2.0)             
-  delta = torch.acos(-torch.trace(X@Y)/2.0)/theta/phi # angle between X and Y
-  # delta = torch.acos(x.T@y/torch.norm(x)/torch.norm(y))
+  theta = torch.norm(x)
+  phi = torch.norm(y)          
+  delta = torch.acos(x.T@y/torch.norm(x)/torch.norm(y)) # angles between x and y
   a = torch.sin(theta)*torch.cos(phi/2.0)*torch.cos(phi/2.0)-torch.sin(phi)*torch.sin(theta/2.0)*torch.sin(theta/2.0)*torch.cos(delta)
   b = torch.sin(phi)*torch.cos(theta/2.0)*torch.cos(theta/2.0)-torch.sin(theta)*torch.sin(phi/2.0)*torch.sin(phi/2.0)*torch.cos(delta)
   c = 1/2.0*torch.sin(theta)*torch.sin(phi)-2.0*torch.sin(theta/2.0)*torch.sin(theta/2.0)*torch.sin(phi/2.0)*torch.sin(phi/2.0)*torch.cos(delta)

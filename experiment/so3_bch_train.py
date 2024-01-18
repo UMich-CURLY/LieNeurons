@@ -82,10 +82,10 @@ def train(model, train_loader, test_loader, config, device='cpu'):
         for i, sample in tqdm(enumerate(train_loader, start=0)):
             x = sample['x'].to(device)
             y = sample['y'].to(device)
-            print("=================================================")
-            print("i ",i)
-            for name, param in model.named_parameters():
-                print(name, param.data)
+            # print("=================================================")
+            # print("i ",i)
+            # for name, param in model.named_parameters():
+            #     print(name, param.data)
 
             output = model(x)
             

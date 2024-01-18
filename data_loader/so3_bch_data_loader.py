@@ -64,7 +64,11 @@ if __name__ == "__main__":
         R1 = exp_so3(hat(input_data[0, :, :].squeeze(-1)))
         R2 = exp_so3(hat(input_data[1, :, :].squeeze(-1)))
         v3 = vee(log_SO3(torch.matmul(R1,R2)),algebra_type='so3')
-
+        
+        print("v1", input_data[0, :, :].squeeze(-1))
+        print("v2", input_data[1, :, :].squeeze(-1))
+        print("v3", v3)
+        print("norm v3", torch.norm(v3))
         y = samples['y'].to('cuda')
 
         # print(torch.trace(hat(y)))
@@ -95,7 +99,7 @@ if __name__ == "__main__":
         
         # print(y)
         # print(input_data.shape)
-    print("sum", sum)
+    print("error > 1e-3", sum)
     print("input inf num", sum_inf)
     print("input nan num", sum_nan)
     print("y inf num", sum_y_inf)
