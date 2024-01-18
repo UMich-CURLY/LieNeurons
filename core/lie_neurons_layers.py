@@ -178,9 +178,13 @@ class LNLinearAndLieBracket(nn.Module):
         x: point features of shape [B, N_feat, 3, N_samples, ...]
         '''
         # Linear
+        print("nan?", x.isnan().any())
+        print("x lnbr in: ", x[0,0,:,:])
         x = self.linear(x)
+        print("x lnbr linear: ", x[0,0,:,:])
         # Bracket
         x_out = self.liebracket(x)
+        print("x lnbr bracket: ", x[0,0,:,:])
 
         return x_out
 

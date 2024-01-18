@@ -144,7 +144,7 @@ if __name__ == "__main__":
     test_data['x2'] = x2.numpy()
     test_data['x1_conjugate'] = x1_conj.numpy()
     test_data['x2_conjugate'] = x2_conj.numpy()
-    test_data['y'] = y
+    test_data['y'] = y.numpy()
     test_data['y_conj'] = y_conj.numpy()
     test_data['R_aug'] = R_aug.numpy()
 
