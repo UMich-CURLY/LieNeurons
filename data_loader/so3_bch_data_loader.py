@@ -7,6 +7,7 @@ import torch
 from torch.utils.data import Dataset
 from scipy.linalg import expm
 from tqdm import tqdm
+import matplotlib.pyplot as plt
 
 
 from einops import rearrange, repeat
@@ -46,33 +47,34 @@ class so3BchDataSet(Dataset):
 if __name__ == "__main__":
 
     DataLoader = so3BchDataSet(
-        "data/so3_bch_data/so3_bch_10000_train_data.npz")
+        "data/so3_bch_data/so3_bch_10000_4_train_data.npz")
 
     hat = HatLayer(algebra_type='so3').to('cuda')
-    print(DataLoader.x1.shape)
-    print(DataLoader.x2.shape)
-    print(DataLoader.x.shape)
-    print(DataLoader.y.shape)
+    # print(DataLoader.x1.shape)
+    # print(DataLoader.x2.shape)
+    # print(DataLoader.x.shape)
+    # print(DataLoader.y.shape)
 
     sum = 0
     sum_inf = 0
     sum_nan = 0
     sum_y_nan = 0
     sum_y_inf = 0
+    v3_list = torch.zeros((DataLoader.num_data, 3))
     for i, samples in tqdm(enumerate(DataLoader, start=0)):
         input_data = samples['x'].to('cuda')
         R1 = exp_so3(hat(input_data[0, :, :].squeeze(-1)))
         R2 = exp_so3(hat(input_data[1, :, :].squeeze(-1)))
         v3 = vee(log_SO3(torch.matmul(R1,R2)),algebra_type='so3')
-        
-        print("v1", input_data[0, :, :].squeeze(-1))
-        print("v2", input_data[1, :, :].squeeze(-1))
-        print("v3", v3)
-        print("norm v3", torch.norm(v3))
+        v3_list[i,:] = v3
+        # print("v1", input_data[0, :, :].squeeze(-1))
+        # print("v2", input_data[1, :, :].squeeze(-1))
+        # print("v3", v3)
+        # print("norm v3", torch.norm(v3))
         y = samples['y'].to('cuda')
 
         # print(torch.trace(hat(y)))
-        
+        # print(float(torch.norm(v3)))
         if(torch.isinf(input_data).any()):
             sum_inf += 1
 
@@ -88,17 +90,22 @@ if __name__ == "__main__":
         # print("norm", torch.norm(v3-y))
 
         if(torch.norm(v3-y) > 1e-3):
-            print("\nv3", v3)
-            print("y", y)
-            print("diff", v3-y)
-            print("norm", torch.norm(v3-y))
-            print("-------------")
+            # print("\nv3", v3)
+            # print("y", y)
+            # print("diff", v3-y)
+            # print("norm", torch.norm(v3-y))
+            # print("-------------")
             sum += 1
         
         # diff_norm = torch.norm(v3-y)
         
         # print(y)
         # print(input_data.shape)
+
+    # write a code to plot histogram of v1, v2, v3
+    plt.hist(v3_list[:,0].cpu().numpy(), bins=100)
+    plt.show()
+
     print("error > 1e-3", sum)
     print("input inf num", sum_inf)
     print("input nan num", sum_nan)

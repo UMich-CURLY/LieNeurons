@@ -21,6 +21,14 @@ from experiment.so3_bch_layers import *
 from data_loader.so3_bch_data_loader import *
 
 
+def frobenius_norm_loss(x,y,z):
+    # || exp^x @ exp^y @ exp^-z - I ||_f
+    diff = torch.matmul(torch.matmul(exp_so3(x), exp_so3(y)), exp_so3(-z)) - torch.eye(3).to(x.device)
+    frobenius_norm = torch.norm(diff, p='fro')
+
+    return frobenius_norm
+
+
 def init_writer(config):
     writer = SummaryWriter(
         config['log_writer_path']+"_"+str(time.localtime()), comment=config['model_description'])
@@ -53,6 +61,24 @@ def test(model, test_loader, criterion, config, device):
     return loss_avg
 
 
+def test_frobenius(model, test_loader, criterion, config, device):
+    model.eval()
+    hat_so3 = HatLayer(algebra_type='so3').to(device)
+    with torch.no_grad():
+        loss_sum = 0.0
+        for i, sample in tqdm(enumerate(test_loader, start=0)):
+            x = sample['x'].to(device)
+            y = sample['y'].to(device)
+
+            output = model(x)
+
+            loss = frobenius_norm_loss(hat_so3(x[:,0,:].squeeze(-1)), hat_so3(x[:,1,:].squeeze(-1)), hat_so3(output))
+            loss_sum += loss.item()
+
+        loss_avg = loss_sum/len(test_loader)
+
+    return loss_avg
+
 def train(model, train_loader, test_loader, config, device='cpu'):
 
     writer = init_writer(config)
@@ -72,6 +98,7 @@ def train(model, train_loader, test_loader, config, device='cpu'):
     #     start_epoch = checkpoint['epoch']
     # else:
     start_epoch = 0
+    hat_so3 = HatLayer(algebra_type='so3').to(device)
 
     best_loss = float("inf")
     for epoch in range(start_epoch, config['num_epochs']):
@@ -90,8 +117,10 @@ def train(model, train_loader, test_loader, config, device='cpu'):
             output = model(x)
             
             
-
-            loss = criterion(output, y)
+            # print("x",x.shape)
+            # print("hat so3",hat_so3(x[:,0,:].squeeze(-1)).shape)  
+            # loss = criterion(output, y)
+            loss = frobenius_norm_loss(hat_so3(x[:,0,:].squeeze(-1)), hat_so3(x[:,1,:].squeeze(-1)), hat_so3(output))
             loss.backward()
 
             # we only update the weights every config['update_every_batch'] iterations
@@ -117,7 +146,7 @@ def train(model, train_loader, test_loader, config, device='cpu'):
 
         train_loss = loss_sum/len(train_loader)
 
-        test_loss = test(
+        test_loss = test_frobenius(
             model, test_loader, criterion, config, device)
 
         # log down info in tensorboard

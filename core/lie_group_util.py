@@ -32,13 +32,35 @@ def exp_hat_and_so3(w):
   A = skew(w)
   return I + (torch.sin(theta)/theta)*A + ((1-torch.cos(theta))/(theta*theta))*torch.matmul(A,A)
 
+
+# def bacth_exp_so3(A):
+#   # A (B,3,3)
+#   I = torch.eye(3).to(A.device)
+#   theta = torch.sqrt(-torch.trace(torch.matmul(A,A))/2.0)
+#   return I + (torch.sin(theta)/theta)*A + ((1-torch.cos(theta))/(theta*theta))*torch.matmul(A,A)
+
+def batch_trace(A):
+  return A.diagonal(offset=0, dim1=-1, dim2=-2).sum(-1)
+
 def exp_so3(A):
   I = torch.eye(3).to(A.device)
-  theta = torch.sqrt(-torch.trace(torch.matmul(A,A))/2.0)
-  return I + (torch.sin(theta)/theta)*A + ((1-torch.cos(theta))/(theta*theta))*torch.matmul(A,A)
+  # print("A: ",A.shape)
+  theta = torch.sqrt(-batch_trace(torch.matmul(A,A))/2.0).reshape(-1,1,1)
+  # print("theta: ", theta.shape)
+  return I + (torch.sin(theta)/theta)*A + ((1-torch.cos(theta))/(theta**2))*torch.matmul(A,A)
 
 def log_SO3(R):
+
   theta = torch.acos((torch.trace(R)-1)/2.0)
+  if torch.isnan(theta):
+    return torch.zeros((3,3)).to(R.device)
+  # print("theta: ", theta)
+  # if theta - np.pi < 1e-6:
+  #   return theta/2/(np.pi-theta)*(R-R.T)
+  # elif theta > np.pi:
+  #   theta = np.pi-theta
+  K = (theta/(2*torch.sin(theta)))*(R-R.T)
+
   return (theta/(2*torch.sin(theta)))*(R-R.T)
 
 def BCH_approx(X,Y):
@@ -51,7 +73,7 @@ def BCH_so3(X,Y):
   y = vee_so3(Y)
   theta = torch.norm(x)
   phi = torch.norm(y)          
-  delta = torch.acos(x.T@y/torch.norm(x)/torch.norm(y)) # angles between x and y
+  delta = torch.acos(x.transpose(-1,0)@y/torch.norm(x)/torch.norm(y)) # angles between x and y
   a = torch.sin(theta)*torch.cos(phi/2.0)*torch.cos(phi/2.0)-torch.sin(phi)*torch.sin(theta/2.0)*torch.sin(theta/2.0)*torch.cos(delta)
   b = torch.sin(phi)*torch.cos(theta/2.0)*torch.cos(theta/2.0)-torch.sin(theta)*torch.sin(phi/2.0)*torch.sin(phi/2.0)*torch.cos(delta)
   c = 1/2.0*torch.sin(theta)*torch.sin(phi)-2.0*torch.sin(theta/2.0)*torch.sin(theta/2.0)*torch.sin(phi/2.0)*torch.sin(phi/2.0)*torch.cos(delta)
