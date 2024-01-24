@@ -128,7 +128,7 @@ if __name__ == "__main__":
         train_data['x2'] = torch.cat((x2.reshape(8, num_training),conj_x2.reshape(8, num_training*num_conjugate)),dim=1).numpy()
         train_data['x1_conjugate'] = conj_x1.reshape(8, num_training, num_conjugate).repeat(1,num_conjugate+1,1).numpy()
         train_data['x2_conjugate'] = conj_x2.reshape(8, num_training, num_conjugate).repeat(1,num_conjugate+1,1).numpy()
-        train_data['y'] = torch.cat((equ_output.reshape(8, num_training),equ_output_conj.reshape(8, num_training*num_conjugate)),dim=1).numpy()
+        train_data['y'] = torch.cat((equ_output.reshape(num_training, 8),equ_output_conj.reshape(num_training*num_conjugate, 8)),dim=0).numpy().reshape(1, num_training*(num_conjugate+1), 8)
         train_data['y_conj'] = equ_output_conj.reshape(
             num_conjugate, num_training, 8).repeat(1,num_conjugate+1,1).numpy()
         train_data['H'] = H.reshape(num_conjugate, num_training, 3, 3).repeat(1,num_conjugate+1,1,1).numpy()

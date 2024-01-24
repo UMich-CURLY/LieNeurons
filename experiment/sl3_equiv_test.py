@@ -42,7 +42,7 @@ def test(model, test_loader, criterion, config, device):
 
 def test_equivariance(model, test_loader, criterion, config, device):
     model.eval()
-    hat_layer = HatLayerSl3().to(device)
+    hat_layer = HatLayer(algebra_type='sl3').to(device)
     with torch.no_grad():
         loss_sum = 0.0
         loss_non_conj_sum = 0.0

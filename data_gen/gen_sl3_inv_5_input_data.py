@@ -29,7 +29,7 @@ if __name__ == "__main__":
     train_data = {}
     test_data = {}
 
-    hat_layer = HatLayerSl3()
+    hat_layer = HatLayer(algebra_type='sl3')
 
     x1 = torch.Tensor(np.random.uniform(-rnd_scale, rnd_scale, (1, 8, num_training)))\
         .reshape(1, 1, 8, num_training)

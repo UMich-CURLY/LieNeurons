@@ -177,9 +177,9 @@ class sl3EquivDataSetLieBracket2Input(Dataset):
 if __name__ == "__main__":
 
     DataLoader = sl3EquivDataSetLieBracket2Input(
-        "data/sl3_equiv_lie_bracket_data/sl3_equiv_10000_lie_bracket_2inputs_test_data.npz")
+        "data/sl3_equiv_lie_bracket_data/sl3_equiv_10000_lie_bracket_2inputs_augmented_train_data.npz")
 
-    hat = HatLayerSl3().to('cuda')
+    hat = HatLayer(algebra_type='sl3').to('cuda')
     print(DataLoader.x1.shape)
     print(DataLoader.x2.shape)
     print(DataLoader.x1_conjugate.shape)
@@ -191,16 +191,22 @@ if __name__ == "__main__":
     sum = 0
     for i, samples in tqdm(enumerate(DataLoader, start=0)):
         input_data = samples['x']
-        print(input_data.shape)
+        # print(input_data.shape)
         x1_hat = hat(input_data[0, :, :].squeeze(-1))
         x2_hat = hat(input_data[1, :, :].squeeze(-1))
         y_func = equivariant_function(x1_hat, x2_hat)
         y = hat(samples['y'])
         # print(torch.trace(hat(y)))
-        print("y_func", y_func)
-        print("y", y)
-        print("diff", y_func-y)
-        print("-------------")
+        # print("y_func", y_func)
+        # print("y", y)
+        # print("diff", y_func-y)
+        # print("-------------")
+        if(torch.norm(y_func-y) > 1e-3):
+            print("\ny_func", y_func)
+            print("y", y)
+            print("diff", y_func-y)
+            print("norm", torch.norm(y_func-y))
+            print("-------------")
         sum += torch.norm(y)
         # print(y)
         # print(input_data.shape)

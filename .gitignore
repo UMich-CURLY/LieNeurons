@@ -167,5 +167,9 @@ weights/
 logs/
 data/
 logs_rebuttal/
+logs_archive/
+logs_good
 training_all.txt
 eval_results.txt
+eval_aug_mlp.txt
+training_mlp_aug_equiv.txt
