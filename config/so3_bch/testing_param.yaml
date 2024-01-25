@@ -1,0 +1,19 @@
+test_data_path: "/home/justin/code/LieNeurons/data/so3_bch_data/so3_bch_10000_test_data.npz"
+# logger
+model_description: "SO3BCHFunctionFitting"
+print_freq: 100
+
+# model_type: "LN_relu_bracket"
+# model_path: "/home/justin/code/LieNeurons/weights/0120_so3_bch_relu_bracket_best_test_loss_acc.pt"
+
+# model_type: "LN_relu"
+# model_path: "/home/justin/code/LieNeurons/weights/0120_so3_bch_relu_4_layers_1024"
+
+# model_type: "LN_bracket"
+# model_path: "/home/justin/code/LieNeurons/weights/0124_so3_bch_bracket_best_test_loss_acc.pt"
+
+model_type: "MLP"
+model_path: "/home/justin/code/LieNeurons/weights/0121_so3_bch_mlp_4_layers_1024_best_test_loss_acc.pt"
+
+batch_size: 1
+shuffle: False

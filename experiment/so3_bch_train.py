@@ -29,6 +29,7 @@ def frobenius_norm_loss(x,y,z):
     return frobenius_norm
 
 
+
 def init_writer(config):
     writer = SummaryWriter(
         config['log_writer_path']+"_"+str(time.localtime()), comment=config['model_description'])
@@ -198,7 +199,6 @@ def main():
     # load yaml file
     config = yaml.safe_load(open(args.training_config))
 
-    # 5 input
     training_set = so3BchDataSet(
         config['train_data_path'], device=device)
     train_loader = DataLoader(dataset=training_set, batch_size=config['batch_size'],

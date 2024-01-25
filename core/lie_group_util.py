@@ -51,17 +51,26 @@ def exp_so3(A):
 
 def log_SO3(R):
 
-  theta = torch.acos((torch.trace(R)-1)/2.0)
-  if torch.isnan(theta):
-    return torch.zeros((3,3)).to(R.device)
+  # print("trace: ", torch.trace(R))
+  print("R",R)
+  print("trace",(batch_trace(R)-1)/2.0)
+  theta = torch.acos((batch_trace(R)-1)/2.0)
+  theta2 = torch.asin(torch.sqrt((3-batch_trace(R))*(1+batch_trace(R)))/2.0)
+  print("theta: ", theta)
+  print("theta2: ", theta2)
+
+
+  # if torch.isnan(theta):
+  #   return torch.zeros((3,3)).to(R.device)
   # print("theta: ", theta)
   # if theta - np.pi < 1e-6:
   #   return theta/2/(np.pi-theta)*(R-R.T)
   # elif theta > np.pi:
   #   theta = np.pi-theta
-  K = (theta/(2*torch.sin(theta)))*(R-R.T)
+  # K = (theta/(2*torch.sin(theta)))[:,None,None]*(R-R.transpose(-1,-2))
 
-  return (theta/(2*torch.sin(theta)))*(R-R.T)
+  return (theta/(2*torch.sin(theta)))[:,None,None]*(R-R.transpose(-1,-2))
+
 
 def BCH_approx(X,Y):
   return X+Y+1/2*lie_bracket(X,Y)+1/12*lie_bracket(X,lie_bracket(X,Y))-1/12*lie_bracket(Y,lie_bracket(X,Y))\

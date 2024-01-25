@@ -43,6 +43,48 @@ class so3BchDataSet(Dataset):
                   'x': self.x[idx, :, :, :], 'y': self.y[idx, :]}
         return sample
 
+class so3BchTestDataSet(Dataset):
+    '''
+    Test data set contains augmented infomation
+    '''
+    def __init__(self, data_path, device='cuda'):
+        data = np.load(data_path)
+        num_points, _ = data['x1'].shape
+        
+        self.x1 = rearrange(torch.from_numpy(data['x1']).type(
+            'torch.FloatTensor').to(device), 'n k -> n 1 k 1')
+        self.x2 = rearrange(torch.from_numpy(data['x2']).type(
+            'torch.FloatTensor').to(device), 'n k -> n 1 k 1')
+        self.x = torch.cat((self.x1, self.x2), dim=1)   # n 2 k 1
+        self.x1_conj = rearrange(torch.from_numpy(data['x1_conjugate']).type(
+            'torch.FloatTensor').to(device), 'n c k -> c n 1 k 1')
+        self.x2_conj = rearrange(torch.from_numpy(data['x2_conjugate']).type(
+            'torch.FloatTensor').to(device), 'n c k -> c n 1 k 1')
+        self.x_conj = torch.cat((self.x1_conj, self.x2_conj), dim=2)   # c n 2 k 1
+        self.y = torch.from_numpy(data['y']).type(
+            'torch.FloatTensor').to(device) # [N,3]
+        self.y_conj = rearrange(torch.from_numpy(data['y_conj']).type(
+            'torch.FloatTensor').to(device), 'n c k -> c n k') # [c, N,3]
+        self.R = rearrange(torch.from_numpy(data['R_aug']).type(
+            'torch.FloatTensor').to(device), 'n c k1 k2 -> c n k1 k2') # [c, N,3,3]
+        # print(self.y.shape)
+        self.num_data = self.x1.shape[0]
+
+    def __len__(self):
+        return self.num_data
+
+    def __getitem__(self, idx):
+        if torch.is_tensor(idx):
+            idx = idx.tolist()
+
+        sample = {'x1': self.x1[idx, :, :, :], 'x2': self.x2[idx, :, :, :],\
+                  'x': self.x[idx, :, :, :], 'y': self.y[idx, :],\
+                  'x1_conj': self.x1_conj[:,idx, :, :, :], 'x2_conj': self.x2_conj[:,idx, :, :, :],\
+                  'x_conj': self.x_conj[:,idx,:,:,:],'y_conj': self.y_conj[:,idx, :], \
+                  'R': self.R[:,idx, :, :]
+                  }
+        return sample
+
 
 if __name__ == "__main__":
 
