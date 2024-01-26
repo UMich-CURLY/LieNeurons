@@ -169,6 +169,8 @@ data/
 logs_rebuttal/
 logs_archive/
 logs_good/
+png_ln_ode_demo/
+png_neural_ode_demo/
 training_all.txt
 eval_results.txt
 eval_aug_mlp.txt

@@ -25,7 +25,7 @@ class LNLinear(nn.Module):
 
     def forward(self, x):
         '''
-        x: input of shape [B, F, 8, N]
+        x: input of shape [B, F, K, N]
         '''
         x_out = self.fc(x.transpose(1, -1)).transpose(1, -1)
         return x_out

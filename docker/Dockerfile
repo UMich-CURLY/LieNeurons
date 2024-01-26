@@ -43,3 +43,6 @@ RUN pip install pytest
 
 # setuptool
 RUN pip install setuptools==59.5.0
+
+# torch diff eq
+RUN pip install git+https://github.com/rtqichen/torchdiffeq
