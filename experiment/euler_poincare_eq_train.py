@@ -10,8 +10,9 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from core.lie_neurons_layers import *
+from core.lie_alg_util import *
 
-parser = argparse.ArgumentParser('ODE demo')
+parser = argparse.ArgumentParser('Euler Poincare Equation Fitting')
 parser.add_argument('--method', type=str, default='dopri5')
 parser.add_argument('--data_size', type=int, default=1000)
 parser.add_argument('--batch_time', type=int, default=10)
@@ -30,19 +31,36 @@ else:
 
 device = torch.device('cuda:' + str(args.gpu) if torch.cuda.is_available() else 'cpu')
 
-true_y0 = torch.tensor([[2., 0.]]).to(device)
+true_y0 = torch.tensor([[2., 1.,3.0]]).to(device)
 t = torch.linspace(0., 25., args.data_size).to(device)
-true_A = torch.tensor([[-0.1, 2.0], [-2.0, -0.1]]).to(device)
 
+class EulerPoincareEquation(nn.Module):
+    
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        '''
+        Inertia matrix of the ISS
+        https://athena.ecs.csus.edu/~grandajj/ME296M/space.pdf
+        page 7-62
+        '''
+        self.I = torch.Tensor([[12, -5., 7.],[-5., 20., -2.],[7., -2., 5.]]).unsqueeze(0).to(device)
+        # self.I = torch.Tensor([[5410880., -246595., 2967671.],[-246595., 29457838., -47804.],[2967671., -47804., 26744180.]]).to(device)
+        self.I_inv = torch.inverse(self.I)
+        self.hat_layer = HatLayer(algebra_type='so3').to(device)
 
-class Lambda(nn.Module):
-
-    def forward(self, t, y):
-        return torch.mm(y**3, true_A)
+    def forward(self,t,w):
+        '''
+        w: angular velocity (B,3) or (1,3)
+        '''
+        print(self.I.shape)
+        print(self.hat_layer(w).shape)
+        print(self.I_inv.shape)
+        print(w.shape)
+        return -torch.matmul(self.I_inv,torch.matmul(self.hat_layer(w),torch.matmul(self.I,w)))
 
 
 with torch.no_grad():
-    true_y = odeint(Lambda(), true_y0, t, method='dopri5')
+    true_y = odeint(EulerPoincareEquation(), true_y0, t, method='dopri5')
 
 
 def get_batch():
@@ -191,10 +209,10 @@ if __name__ == '__main__':
 
     ii = 0
     # print("true_y", true_y.shape)
-    true_y = torch.cat((true_y,torch.zeros(true_y.shape[0],true_y.shape[1],1).to(device)),dim=2)
-    true_y0 = torch.cat((true_y0,torch.zeros(true_y0.shape[0],1).to(device)),dim=1)
+    # true_y = torch.cat((true_y,torch.zeros(true_y.shape[0],true_y.shape[1],1).to(device)),dim=2)
+    # true_y0 = torch.cat((true_y0,torch.zeros(true_y0.shape[0],1).to(device)),dim=1)
     
-    true_y0 = rearrange(true_y0,'b d -> b 1 d')
+    # true_y0 = rearrange(true_y0,'b d -> b 1 d')
 
     func = LNODEFunc().to(device)
     # func = ODEFunc().to(device)
@@ -210,11 +228,11 @@ if __name__ == '__main__':
         optimizer.zero_grad()
         batch_y0, batch_t, batch_y = get_batch()
         # print("here")
-        # print("batch_y", batch_y.shape)
-        # print("batch_y0", batch_y0.shape)
-        # print("batch_t", batch_t.shape)
+        print("batch_y", batch_y.shape)
+        print("batch_y0", batch_y0.shape)
+        print("batch_t", batch_t.shape)
         pred_y = odeint(func, batch_y0, batch_t).to(device)
-        # print("pred y", pred_y.shape)
+        print("pred y", pred_y.shape)
         loss = torch.mean(torch.abs(pred_y[:,:2] - batch_y[:,:2]))
         loss.backward()
         
