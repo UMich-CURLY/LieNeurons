@@ -52,11 +52,14 @@ class EulerPoincareEquation(nn.Module):
         '''
         w: angular velocity (B,3) or (1,3)
         '''
-        print(self.I.shape)
-        print(self.hat_layer(w).shape)
-        print(self.I_inv.shape)
-        print(w.shape)
-        return -torch.matmul(self.I_inv,torch.matmul(self.hat_layer(w),torch.matmul(self.I,w)))
+        # print("I",self.I.shape)
+        # print("w hat",self.hat_layer(w).shape)
+        # print("I inv",self.I_inv.shape)
+        # print("w",w.shape)
+        w_v = w.unsqueeze(2)
+        # print("return",(-torch.matmul(self.I_inv,torch.matmul(self.hat_layer(w),torch.matmul(self.I,w_v)))).shape)
+        # print("----------------")
+        return -torch.matmul(self.I_inv,torch.matmul(self.hat_layer(w),torch.matmul(self.I,w_v))).squeeze(2)
 
 
 with torch.no_grad():
@@ -163,8 +166,8 @@ class LNODEFunc(nn.Module):
 
     def forward(self, t, y):
         # print(y.shape)
-        y3 = rearrange(y**3,'b c d -> b 1 d c')
-        return rearrange(self.net(y3),'b 1 d c -> b c d')
+        y_reshape = rearrange(y,'b c d -> b 1 d c')
+        return rearrange(self.net(y_reshape),'b 1 d c -> b c d')
 
 class ODEFunc(nn.Module):
 
@@ -184,7 +187,7 @@ class ODEFunc(nn.Module):
 
     def forward(self, t, y):
         # print(y.shape)
-        return self.net(y**3)
+        return self.net(y)
     
 class RunningAverageMeter(object):
     """Computes and stores the average and current value"""
@@ -212,10 +215,10 @@ if __name__ == '__main__':
     # true_y = torch.cat((true_y,torch.zeros(true_y.shape[0],true_y.shape[1],1).to(device)),dim=2)
     # true_y0 = torch.cat((true_y0,torch.zeros(true_y0.shape[0],1).to(device)),dim=1)
     
-    # true_y0 = rearrange(true_y0,'b d -> b 1 d')
+    true_y0 = rearrange(true_y0,'b d -> b 1 d')
 
-    func = LNODEFunc().to(device)
-    # func = ODEFunc().to(device)
+    # func = LNODEFunc().to(device)
+    func = ODEFunc().to(device)
     
     optimizer = optim.RMSprop(func.parameters(), lr=1e-3)
     end = time.time()
@@ -228,11 +231,11 @@ if __name__ == '__main__':
         optimizer.zero_grad()
         batch_y0, batch_t, batch_y = get_batch()
         # print("here")
-        print("batch_y", batch_y.shape)
-        print("batch_y0", batch_y0.shape)
-        print("batch_t", batch_t.shape)
+        # print("batch_y", batch_y.shape)
+        # print("batch_y0", batch_y0.shape)
+        # print("batch_t", batch_t.shape)
         pred_y = odeint(func, batch_y0, batch_t).to(device)
-        print("pred y", pred_y.shape)
+        # print("pred y", pred_y.shape)
         loss = torch.mean(torch.abs(pred_y[:,:2] - batch_y[:,:2]))
         loss.backward()
         
