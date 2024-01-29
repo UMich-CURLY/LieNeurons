@@ -43,8 +43,9 @@ class EulerPoincareEquation(nn.Module):
         https://athena.ecs.csus.edu/~grandajj/ME296M/space.pdf
         page 7-62
         '''
-        self.I = torch.Tensor([[12, -5., 7.],[-5., 20., -2.],[7., -2., 5.]]).unsqueeze(0).to(device)
-        # self.I = torch.Tensor([[5410880., -246595., 2967671.],[-246595., 29457838., -47804.],[2967671., -47804., 26744180.]]).to(device)
+        # self.I = torch.Tensor([[12, -5., 7.],[-5., 20., -2.],[7., -2., 5.]]).unsqueeze(0).to(device)
+        self.I = torch.Tensor([[12, 0, 0],[0, 20., 0],[0, 0, 5.]]).unsqueeze(0).to(device)
+        # self.I = torch.Tensor([[5410880., -246595., 2967671.],[-246595., 29457838., -47804.],[2967671., -47804., 26744180.]]).unsqueeze(0).to(device)
         self.I_inv = torch.inverse(self.I)
         self.hat_layer = HatLayer(algebra_type='so3').to(device)
 
@@ -56,6 +57,7 @@ class EulerPoincareEquation(nn.Module):
         # print("w hat",self.hat_layer(w).shape)
         # print("I inv",self.I_inv.shape)
         # print("w",w.shape)
+        # print("w",w)
         w_v = w.unsqueeze(2)
         # print("return",(-torch.matmul(self.I_inv,torch.matmul(self.hat_layer(w),torch.matmul(self.I,w_v)))).shape)
         # print("----------------")
@@ -148,12 +150,14 @@ class LNODEFunc(nn.Module):
 
         self.net = nn.Sequential(
             # LNLinearAndKillingRelu(1,50,algebra_type='so3'),
-            # # LNLinear(50,1)
+            # LNLinear(50,1)
             # LNLinearAndKillingRelu(50,1,algebra_type='so3')
 
-            
-            LNLinearAndLieBracket(1,50,algebra_type='so3'),
+            LNLinearAndKillingRelu(1,50,algebra_type='so3'),
             LNLinearAndLieBracket(50,1,algebra_type='so3')
+            
+            # LNLinearAndLieBracket(1,50,algebra_type='so3'),
+            # LNLinearAndLieBracket(50,1,algebra_type='so3')
             # LNLinearAndKillingRelu(1,50,algebra_type='so3'),
             # LNLinearAndLieBracket(50,50,algebra_type='so3'),
             # LNLinearAndKillingRelu(50,1,algebra_type='so3')
@@ -161,7 +165,7 @@ class LNODEFunc(nn.Module):
 
         for m in self.net.modules():
             if isinstance(m, nn.Linear):
-                nn.init.normal_(m.weight, mean=0, std=0.1)
+                nn.init.normal_(m.weight, mean=0, std=1)
                 # nn.init.constant_(m.bias, val=0)
 
     def forward(self, t, y):
@@ -217,8 +221,8 @@ if __name__ == '__main__':
     
     true_y0 = rearrange(true_y0,'b d -> b 1 d')
 
-    # func = LNODEFunc().to(device)
-    func = ODEFunc().to(device)
+    func = LNODEFunc().to(device)
+    # func = ODEFunc().to(device)
     
     optimizer = optim.RMSprop(func.parameters(), lr=1e-3)
     end = time.time()
@@ -234,7 +238,7 @@ if __name__ == '__main__':
         # print("batch_y", batch_y.shape)
         # print("batch_y0", batch_y0.shape)
         # print("batch_t", batch_t.shape)
-        pred_y = odeint(func, batch_y0, batch_t).to(device)
+        pred_y = odeint(func, batch_y0, batch_t, atol=1e-9,rtol=1e-7).to(device)
         # print("pred y", pred_y.shape)
         loss = torch.mean(torch.abs(pred_y[:,:2] - batch_y[:,:2]))
         loss.backward()

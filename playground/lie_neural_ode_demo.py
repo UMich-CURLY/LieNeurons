@@ -196,8 +196,8 @@ if __name__ == '__main__':
     
     true_y0 = rearrange(true_y0,'b d -> b 1 d')
 
-    func = LNODEFunc().to(device)
-    # func = ODEFunc().to(device)
+    # func = LNODEFunc().to(device)
+    func = ODEFunc().to(device)
     
     optimizer = optim.RMSprop(func.parameters(), lr=1e-3)
     end = time.time()
