@@ -20,18 +20,7 @@ from core.lie_alg_util import *
 from experiment.euler_poincare_eq_layers import *
 
 
-def init_writer(config):
-    writer = SummaryWriter(
-        config['log_writer_path']+"_"+str(time.localtime()), comment=config['model_description'])
-    writer.add_text("train_data_path: ", config['train_data_path'])
-    writer.add_text("model_save_path: ", config['model_save_path'])
-    writer.add_text("log_writer_path: ", config['log_writer_path'])
-    writer.add_text("shuffle: ", str(config['shuffle']))
-    writer.add_text("batch_size: ", str(config['batch_size']))
-    writer.add_text("init_lr: ", str(config['initial_learning_rate']))
-    writer.add_text("num_epochs: ", str(config['num_epochs']))
 
-    return writer
 
 parser = argparse.ArgumentParser('Euler Poincare Equation Fitting')
 parser.add_argument('--method', type=str, default='dopri5')
@@ -44,15 +33,25 @@ parser.add_argument('--save_freq', type=int, default=100)
 parser.add_argument('--viz', action='store_true')
 parser.add_argument('--gpu', type=int, default=0)
 parser.add_argument('--adjoint', action='store_true')
-parser.add_argument('--fig_save_path', type=str, default='euler_poincare_ln')
-parser.add_argument('--model_save_path', type=str, default='euler_poincare_ln')
+parser.add_argument('--fig_save_path', type=str, default='figures/euler_poincare_ln')
+parser.add_argument('--model_save_path', type=str, default='weights/euler_poincare_ln')
 parser.add_argument('--model_type', type=str, default='neural_ode')
+parser.add_argument('--training_config', type=str,
+                        default=os.path.dirname(os.path.abspath(__file__))+'/../config/euler_poincare/training_param.yaml')
+parser.add_argument('--log_writer_path', type=str, default='logs/euler_poincare_ln')
 args = parser.parse_args()
 
 if args.adjoint:
     from torchdiffeq import odeint_adjoint as odeint
 else:
     from torchdiffeq import odeint
+
+def init_writer(config):
+    writer = SummaryWriter(
+        args.log_writer_path+"_"+str(time.localtime()), args.model_type)
+    writer.add_text("num_iterations: ", str(args.niters))
+
+    return writer
 
 device = torch.device('cuda:' + str(args.gpu) if torch.cuda.is_available() else 'cpu')
 
@@ -115,7 +114,7 @@ def makedirs(dirname):
 
 
 if args.viz:
-    makedirs('figures/'+args.fig_save_path)
+    makedirs(args.fig_save_path)
     import matplotlib.pyplot as plt
     fig = plt.figure(figsize=(12, 4), facecolor='white')
     ax_traj = fig.add_subplot(131, frameon=False)
@@ -168,7 +167,7 @@ def visualize(true_y, pred_y, odefunc, itr):
         # ax_vecfield.set_ylim(-2, 2)
 
         fig.tight_layout()
-        plt.savefig('figures/'+args.fig_save_path+'/{:03d}'.format(itr))
+        plt.savefig(args.fig_save_path+'/{:03d}'.format(itr))
         # plt.draw()
         # plt.pause(0.001)
 
@@ -198,9 +197,12 @@ if __name__ == '__main__':
 
     ii = 0
     jj = 0
-    # print("true_y", true_y.shape)
-    # true_y = torch.cat((true_y,torch.zeros(true_y.shape[0],true_y.shape[1],1).to(device)),dim=2)
-    # true_y0 = torch.cat((true_y0,torch.zeros(true_y0.shape[0],1).to(device)),dim=1)
+
+    # load yaml file
+    config = yaml.safe_load(open(args.training_config))
+
+    writer = init_writer(config)
+
     
     true_y0 = rearrange(true_y0,'b d -> b 1 d')
 
@@ -240,7 +242,8 @@ if __name__ == '__main__':
         # print("pred y", pred_y.shape)
         loss = torch.mean(torch.abs(pred_y[:,:] - batch_y[:,:]))
         loss.backward()
-        
+
+        writer.add_scalar('training loss', loss.item(), itr)
         # for i in range(pred_y.shape[0]):
         #     print("loss:", loss.item())
         #     print("pred y", pred_y[i,:])
@@ -279,7 +282,7 @@ if __name__ == '__main__':
                         'optimizer_state_dict': optimizer.state_dict(),
                         'loss': loss}
 
-                torch.save(state, 'weights/' + args.model_save_path +
+                torch.save(state,  args.model_save_path +
                         '_best_test_loss_acc.pt')
             print("------------------------------")
 
@@ -289,6 +292,6 @@ if __name__ == '__main__':
                         'optimizer_state_dict': optimizer.state_dict(),
                         'loss': loss}
 
-            torch.save(state, 'weights/'+ args.model_save_path + '_iter_'+str(itr)+'.pt')
+            torch.save(state, args.model_save_path + '_iter_'+str(itr)+'.pt')
             
         end = time.time()
