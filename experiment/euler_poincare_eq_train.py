@@ -212,6 +212,10 @@ if __name__ == '__main__':
         func = LNODEFunc3(device=device).to(device)
     elif args.model_type == 'LN_ode4':
         func = LNODEFunc4(device=device).to(device)
+    elif args.model_type == 'LN_ode5':
+        func = LNODEFunc5(device=device).to(device)
+    elif args.model_type == 'LN_ode6':
+        func = LNODEFunc6(device=device).to(device)
     elif args.model_type == 'neural_ode':
         func = ODEFunc().to(device)
     

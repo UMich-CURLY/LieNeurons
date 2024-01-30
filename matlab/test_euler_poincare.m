@@ -20,6 +20,7 @@ xlabel("x")
 ylabel("y")
 
 
+[X,Y,Z] = meshgrid(-2:0.1:2,-2:0.1:2,-2:0.1:2);
 
 function w_wedge = wedge(w)
   w_wedge = zeros(3,3);
@@ -32,9 +33,10 @@ function w_wedge = wedge(w)
 end
 
 function dwdt = EulerPoincare(t,w)
-  I = [[12, 0, 0];[0, 20., 0];[0, 0, 5.]];
-%   I = [[12, -5., 7.];[-5., 20., -2.];[7., -2., 5.]];
+%   I = [[12, 0, 0];[0, 20., 0];[0, 0, 5.]];
+  I = [[12, -5., 7.];[-5., 20., -2.];[7., -2., 5.]];
   w_wedge = wedge(w);
+  
   
   dwdt = -I\w_wedge*I*w;
 end

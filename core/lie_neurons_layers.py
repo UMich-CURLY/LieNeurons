@@ -97,8 +97,8 @@ class LNLieBracket(nn.Module):
 
         d = self.learn_dir(x.transpose(1, -1)).transpose(1, -1)         # [B, F, K, N]
         d2 = self.learn_dir2(x.transpose(1, -1)).transpose(1, -1)       # [B, F, K, N]
-
         d = d.transpose(2, -1)
+
         d2 = d2.transpose(2,-1)
 
         d_hat = self.HatLayer(d)
