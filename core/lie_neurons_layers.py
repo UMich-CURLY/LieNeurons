@@ -25,7 +25,7 @@ class LNLinear(nn.Module):
 
     def forward(self, x):
         '''
-        x: input of shape [B, F, K, N]
+        x: input of shape [B, F, 8, N]
         '''
         x_out = self.fc(x.transpose(1, -1)).transpose(1, -1)
         return x_out
@@ -91,12 +91,12 @@ class LNLieBracket(nn.Module):
 
     def forward(self, x):
         '''
-        x: point features of shape [B, F, 8, N]
+        x: point features of shape [B, F, K, N]
         '''
         # B, F, _, N = x.shape
 
-        d = self.learn_dir(x.transpose(1, -1)).transpose(1, -1)
-        d2 = self.learn_dir2(x.transpose(1, -1)).transpose(1, -1)
+        d = self.learn_dir(x.transpose(1, -1)).transpose(1, -1)         # [B, F, K, N]
+        d2 = self.learn_dir2(x.transpose(1, -1)).transpose(1, -1)       # [B, F, K, N]
 
         d = d.transpose(2, -1)
         d2 = d2.transpose(2,-1)
@@ -144,6 +144,61 @@ class LNLieBracketNoResidualConnect(nn.Module):
         x_out = vee(lie_bracket,self.algebra_type).transpose(2, -1)
         return x_out
 
+
+class LNEquivairanChannelMixing(nn.Module):
+    def __init__(self, in_channel) -> None:
+        super(LNEquivairanChannelMixing).__init__()
+
+        self.ln_linear_relu = LNLinearAndKillingRelu(in_channel, 3, algebra_type='so3', share_nonlinearity=False),
+        self.ln_pooling = LNMaxPool(3)
+
+    def forward(self, x):
+        x = self.ln_linear_relu(x)  # B, F, K (3 for so(3)), N
+        x = self.ln_pooling(x).squeeze(-1)      # B, F, K (3 for so(3))
+        out = torch.matmul(x.transpose(1, 2), x)
+        return out
+    
+class LNLieBracketChannelMix(nn.Module):
+    def __init__(self, in_channels, algebra_type='so3', share_nonlinearity=False, residual_connect=True):
+        super(LNLieBracketChannelMix, self).__init__()
+        self.share_nonlinearity = share_nonlinearity
+        self.algebra_type = algebra_type
+        self.residual_connect = residual_connect
+
+        if share_nonlinearity == True:
+            self.learn_dir = nn.Linear(in_channels, 1, bias=False)
+            self.learn_dir2 = nn.Linear(in_channels, 1, bias=False)
+        else:
+            self.learn_dir = nn.Linear(in_channels, in_channels, bias=False)
+            self.learn_dir2 = nn.Linear(in_channels, in_channels, bias=False)
+
+        self.HatLayer =  HatLayer(algebra_type)
+
+
+    def forward(self, x, M1=torch.eye(3), M2=torch.eye(3)):
+        '''
+        x: point features of shape [B, F, K, N]
+        '''
+        # B, F, _, N = x.shape
+        M1 = M1.to(x.device)
+        M2 = M2.to(x.device)
+
+        d = self.learn_dir(x.transpose(1, -1)).transpose(1, -1)     # [B, F, K, N]
+        d2 = self.learn_dir2(x.transpose(1, -1)).transpose(1, -1)   # [B, F, K, N]
+
+        d = torch.einsum('d k, b f k n -> b f n d',M1,d)             # [B, F, N, K]
+        d2 = torch.einsum('d k, b f k n -> b f n d',M2,d2)           # [B, F, N, K]                      
+
+        d_hat = self.HatLayer(d)
+        d2_hat = self.HatLayer(d2)
+        lie_bracket = torch.matmul(d2_hat, d_hat) - torch.matmul(d_hat,d2_hat)
+        if self.residual_connect:
+            x_out = x + vee(lie_bracket,self.algebra_type).transpose(2, -1)
+        else:
+            x_out = x + vee(lie_bracket,self.algebra_type).transpose(2, -1)
+        return x_out
+
+
 class LNLinearAndKillingRelu(nn.Module):
     def __init__(self, in_channels, out_channels, algebra_type='sl3', share_nonlinearity=False, leaky_relu=False,negative_slope=0.2):
         super(LNLinearAndKillingRelu, self).__init__()
@@ -181,6 +236,26 @@ class LNLinearAndLieBracket(nn.Module):
         x = self.linear(x)
         # Bracket
         x_out = self.liebracket(x)
+
+        return x_out
+    
+
+class LNLinearAndLieBracketChannelMix(nn.Module):
+    def __init__(self, in_channels, out_channels, algebra_type='so3', share_nonlinearity=False, residual_connect=True):
+        super(LNLinearAndLieBracketChannelMix, self).__init__()
+        self.share_nonlinearity = share_nonlinearity
+        self.linear = LNLinear(in_channels, out_channels)
+        self.liebracket = LNLieBracketChannelMix(
+            out_channels, algebra_type=algebra_type, share_nonlinearity=share_nonlinearity, residual_connect=residual_connect)
+
+    def forward(self, x, M1, M2):
+        '''
+        x: point features of shape [B, N_feat, 3, N_samples, ...]
+        '''
+        # Linear
+        x = self.linear(x)
+        # Bracket
+        x_out = self.liebracket(x, M1, M2)
 
         return x_out
 
