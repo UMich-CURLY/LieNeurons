@@ -8,22 +8,22 @@ import numpy as np
 import yaml
 from tqdm import tqdm
 import time
+import random
 
 import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.tensorboard import SummaryWriter
-from torch.utils.data import Dataset, DataLoader
 
 from core.lie_neurons_layers import *
 from core.lie_alg_util import *
 from experiment.euler_poincare_eq_layers import *
 
 
-
-
 parser = argparse.ArgumentParser('Euler Poincare Equation Fitting')
 parser.add_argument('--method', type=str, default='dopri5')
+parser.add_argument('--num_training', type=int, default=10)
+parser.add_argument('--num_testing', type=int, default=10)
 parser.add_argument('--data_size', type=int, default=1000)
 parser.add_argument('--batch_time', type=int, default=10)
 parser.add_argument('--batch_size', type=int, default=20)
@@ -55,9 +55,13 @@ def init_writer(config):
 
 device = torch.device('cuda:' + str(args.gpu) if torch.cuda.is_available() else 'cpu')
 
-true_y0 = torch.tensor([[2., 1.,3.0]]).to(device)
-t = torch.linspace(0., 25., args.data_size).to(device)
 
+torch.manual_seed(5566)
+training_y0 = torch.rand((args.num_training, 3)).to(device)
+testing_y0 = torch.rand((args.num_testing, 3)).to(device)
+val_true_y0 = torch.tensor([[2., 1.,3.0]]).to(device)
+t = torch.linspace(0., 25., args.data_size).to(device)
+t_val = torch.linspace(0., 5., int(args.data_size/5)).to(device)
 class EulerPoincareEquation(nn.Module):
     
     def __init__(self, *args, **kwargs) -> None:
@@ -94,8 +98,27 @@ class EulerPoincareEquation(nn.Module):
 
 
 with torch.no_grad():
-    true_y = odeint(EulerPoincareEquation(), true_y0, t, method='dopri5')
+    training_y = []
+    testing_y = []
+    for i in range(args.num_training):
+        true_y = odeint(EulerPoincareEquation(), training_y0[i,:].unsqueeze(0), t, method='dopri5')
+        training_y.append(true_y)   
 
+    # for i in range(args.num_testing):
+    #     true_y = odeint(EulerPoincareEquation(), testing_y0[i,:], t, method='dopri5')
+    #     testing_y.append(true_y)
+
+    val_true_y = odeint(EulerPoincareEquation(), val_true_y0, t_val, method='dopri5')
+
+def get_training_batch():
+    j = random.randint(0, args.num_training - 1)
+    y_j = training_y[j]
+    s = torch.from_numpy(np.random.choice(np.arange(args.data_size - args.batch_time, dtype=np.int64), args.batch_size, replace=False))
+    batch_y0 = y_j[s] # (M, D)
+    batch_t = t[:args.batch_time]  # (T)
+    batch_y = torch.stack([y_j[s + i] for i in range(args.batch_time)], dim=0)  # (T, M, 3)
+
+    return batch_y0, batch_t, batch_y
 
 def get_batch():
     s = torch.from_numpy(np.random.choice(np.arange(args.data_size - args.batch_time, dtype=np.int64), args.batch_size, replace=False))
@@ -133,9 +156,9 @@ def visualize(true_y, pred_y, odefunc, itr):
         ax_traj.set_title('Trajectories')
         ax_traj.set_xlabel('t')
         ax_traj.set_ylabel('x,y')
-        ax_traj.plot(t.cpu().numpy(), true_y.cpu().numpy()[:, 0, 0], t.cpu().numpy(), true_y.cpu().numpy()[:, 0, 1], 'g-')
-        ax_traj.plot(t.cpu().numpy(), pred_y.cpu().numpy()[:, 0, 0], '--', t.cpu().numpy(), pred_y.cpu().numpy()[:, 0, 1], 'b--')
-        ax_traj.set_xlim(t.cpu().min(), t.cpu().max())
+        ax_traj.plot(t_val.cpu().numpy(), true_y.cpu().numpy()[:, 0, 0], t_val.cpu().numpy(), true_y.cpu().numpy()[:, 0, 1], 'g-')
+        ax_traj.plot(t_val.cpu().numpy(), pred_y.cpu().numpy()[:, 0, 0], '--', t_val.cpu().numpy(), pred_y.cpu().numpy()[:, 0, 1], 'b--')
+        ax_traj.set_xlim(t_val.cpu().min(), t_val.cpu().max())
         # ax_traj.set_ylim(-2, 2)
         ax_traj.legend()
 
@@ -204,7 +227,7 @@ if __name__ == '__main__':
     writer = init_writer(config)
 
     
-    true_y0 = rearrange(true_y0,'b d -> b 1 d')
+    # true_y0 = rearrange(true_y0,'b d -> b 1 d')
 
     if args.model_type == 'LN_ode':
         func = LNODEFunc(device=device).to(device)
@@ -233,14 +256,14 @@ if __name__ == '__main__':
 
     for itr in range(1, args.niters + 1):
         optimizer.zero_grad()
-        batch_y0, batch_t, batch_y = get_batch()
+        batch_y0, batch_t, batch_y = get_training_batch()
         # print("here")
         # print("batch_y", batch_y.shape)
         # print("batch_y0", batch_y0.shape)
         # print("batch_t", batch_t.shape)
         pred_y = odeint(func, batch_y0, batch_t, atol=1e-9,rtol=1e-7).to(device)
         # print("pred y", pred_y.shape)
-        loss = torch.mean(torch.abs(pred_y[:,:] - batch_y[:,:]))
+        loss = torch.mean(torch.abs(pred_y - batch_y))
         loss.backward()
 
         writer.add_scalar('training loss', loss.item(), itr)
@@ -260,7 +283,7 @@ if __name__ == '__main__':
                 # print("true_y", true_y.shape)
                 # print("true_y0", true_y0.shape)
                 # print("t",t.shape)
-                pred_y = odeint(func, true_y0, t)
+                pred_y = odeint(func, val_true_y0.unsqueeze(0), t_val)
                 # print("pred_y", pred_y.shape)
                 # print(pred_y)
                 pred_y = pred_y[:,0,:,:]
@@ -269,9 +292,14 @@ if __name__ == '__main__':
                 #     print("pred y", pred_y[i,:])
                 #     print("true y", true_y[i,:])
                 #     print("----------")
-                loss = torch.mean(torch.abs(pred_y - true_y))
+                # print(torch.abs(pred_y - val_true_y).shape)
+                # print(torch.mean(torch.abs(pred_y - val_true_y)))
+                loss = torch.mean(torch.abs(pred_y - val_true_y))
+
+                writer.add_scalar('validation loss', loss.item(), itr)
+                
                 print('Iter {:04d} | Total Loss {:.6f}'.format(itr, loss.item()))
-                visualize(true_y, pred_y, func, ii)
+                visualize(val_true_y, pred_y, func, ii)
                 ii += 1
 
             if loss < best_loss:
