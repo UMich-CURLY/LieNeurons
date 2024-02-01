@@ -1,4 +1,5 @@
 # python experiment/euler_poincare_eq_train.py --adjoint --viz --inertia_type iss --model_type LN_ode7 --fig_save_path figures/final_LN_ode7 --model_save_path weights/final_LN_ode7 
 # python experiment/euler_poincare_eq_train.py --adjoint --viz --inertia_type iss --model_type neural_ode --fig_save_path figures/final_neural_ode --model_save_path weights/final_neural_ode
-python experiment/euler_poincare_eq_train.py --adjoint --viz --inertia_type iss --model_type LN_ode7 --fig_save_path figures/final_LN_ode7_train_on_one --model_save_path weights/final_LN_ode7_train_on_one 
-python experiment/euler_poincare_eq_train.py --adjoint --viz --inertia_type iss --model_type neural_ode --fig_save_path figures/final_neural_ode_train_on_one --model_save_path weights/final_neural_ode_train_on_one
+# python experiment/euler_poincare_eq_train.py --adjoint --viz --inertia_type iss --model_type LN_ode7 --fig_save_path figures/final_LN_ode7_train_on_one --model_save_path weights/final_LN_ode7_train_on_one --num_training 1
+# python experiment/euler_poincare_eq_train.py --adjoint --viz --inertia_type iss --model_type neural_ode --fig_save_path figures/final_neural_ode_train_on_one --model_save_path weights/final_neural_ode_train_on_one --num_training 1
+python experiment/euler_poincare_eq_train.py --adjoint --viz --inertia_type iss --model_type neural_ode2 --fig_save_path figures/final_neural_ode2_train_on_one --model_save_path weights/final_neural_ode2_train_on_one --num_training 1

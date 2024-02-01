@@ -64,6 +64,7 @@ else:
 val_true_y0 = torch.tensor([[2., 1.,3.0]]).to(device)
 t = torch.linspace(0., 25., args.data_size).to(device)
 t_val = torch.linspace(0., 5., int(args.data_size/5)).to(device)
+
 class EulerPoincareEquation(nn.Module):
     
     def __init__(self) -> None:
@@ -90,7 +91,6 @@ class EulerPoincareEquation(nn.Module):
 
 with torch.no_grad():
     training_y = []
-    testing_y = []
     for i in range(args.num_training):
         true_y = odeint(EulerPoincareEquation(), training_y0[i,:].unsqueeze(0), t, method='dopri5')
         training_y.append(true_y)   
@@ -106,17 +106,6 @@ def get_training_batch():
     batch_y = torch.stack([y_j[s + i] for i in range(args.batch_time)], dim=0)  # (T, M, 3)
 
     return batch_y0, batch_t, batch_y
-
-def get_batch():
-    s = torch.from_numpy(np.random.choice(np.arange(args.data_size - args.batch_time, dtype=np.int64), args.batch_size, replace=False))
-    batch_y0 = true_y[s]  # (M, D)
-    batch_t = t[:args.batch_time]  # (T)
-    batch_y = torch.stack([true_y[s + i] for i in range(args.batch_time)], dim=0)  # (T, M, 3)
-
-    # batch_y0 = torch.cat((batch_y0,torch.zeros(batch_y0.shape[0],batch_y0.shape[1],1).to(device)),dim=2)
-    # batch_y = torch.cat((batch_y,torch.zeros(batch_y.shape[0],batch_y.shape[1],batch_y.shape[2],1).to(device)),dim=3)
-    return batch_y0.to(device), batch_t.to(device), batch_y.to(device)
-
 
 def makedirs(dirname):
     if not os.path.exists(dirname):
@@ -208,13 +197,8 @@ if __name__ == '__main__':
     ii = 0
     jj = 0
 
-    # load yaml file
-    # config = yaml.safe_load(open(args.training_config))
-
     writer = init_writer()
 
-    
-    # true_y0 = rearrange(true_y0,'b d -> b 1 d')
 
     if args.model_type == 'LN_ode':
         func = LNODEFunc(device=device).to(device)
@@ -232,6 +216,8 @@ if __name__ == '__main__':
         func = LNODEFunc7(device=device).to(device)
     elif args.model_type == 'neural_ode':
         func = ODEFunc().to(device)
+    elif args.model_type == 'neural_ode2':
+        func = ODEFunc2().to(device)
     
     optimizer = optim.RMSprop(func.parameters(), lr=1e-3)
     end = time.time()

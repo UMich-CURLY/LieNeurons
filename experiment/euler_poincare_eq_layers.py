@@ -352,3 +352,30 @@ class ODEFunc(nn.Module):
     def forward(self, t, y):
         # print(y.shape)
         return self.net(y)
+    
+class ODEFunc2(nn.Module):
+
+    def __init__(self):
+        super(ODEFunc2, self).__init__()
+
+        self.net = nn.Sequential(
+            nn.Linear(3, 128),
+            nn.ReLU(),
+            nn.Linear(128, 128),
+            nn.ReLU(),
+            nn.Linear(128, 3),
+        )
+        
+        self.R = torch.eye(3)
+
+        for m in self.net.modules():
+            if isinstance(m, nn.Linear):
+                nn.init.normal_(m.weight, mean=0, std=0.1)
+                nn.init.constant_(m.bias, val=0)
+
+    def set_R(self,R):
+        self.R = R.to(self.R.device)
+
+    def forward(self, t, y):
+        # print(y.shape)
+        return self.net(y)

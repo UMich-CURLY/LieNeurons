@@ -24,6 +24,8 @@ from experiment.euler_poincare_eq_layers import *
 
 parser = argparse.ArgumentParser('Euler Poincare Equation Fitting')
 parser.add_argument('--method', type=str, default='dopri5')
+parser.add_argument('--no_quantitative', type=bool, default=False)
+parser.add_argument('--no_test_augmentation', type=bool, default=False)
 parser.add_argument('--num_testing', type=int, default=10)
 parser.add_argument('--num_testing_augmentation', type=int, default=10)
 parser.add_argument('--data_size', type=int, default=1000)
@@ -287,52 +289,50 @@ if __name__ == '__main__':
     testing_y0: (N, D) for each time j we start from the same y0
     testing_y: (J, (N, M_j, D))
     '''
-    for j, t_j in enumerate(t):
-        with torch.no_grad():
-            pred_y = odeint(func, testing_y0.unsqueeze(1), t_j).to(device)  # Lie Neuron takes additional feature dimension thus we need to unsqueeze(1)
-            cur_y = testing_y[j]    # 
-            loss = torch.mean(torch.norm(pred_y - cur_y, dim=-1))
-
-            time_meter.update(time.time() - end)
-            print("loss at",t_end_list[j],"sec is", loss.item())
-
-
-    # generate data for change of reference frame testing
-    hat_so3 = HatLayer(algebra_type='so3')
-    v = torch.rand((args.num_testing_augmentation,3))
-    v = torch.div(v,torch.norm(v,dim=-1).unsqueeze(-1))
-    phi = (math.pi-1e-6)*torch.rand(args.num_testing_augmentation,1)
-    v = phi*v
-    v_hat = hat_so3(v)
-    R = exp_so3(v_hat).to(device)
-    
-    loss_meters = []
-    for j,_ in enumerate(t):
-        loss_meters.append(RunningAverageMeter(1.00))
-
-    for j, t_j in enumerate(t):
-        cur_y = testing_y[j]    # (N, M_j, D)
-        for k in range(args.num_testing_augmentation):
-            cur_R = R[k,:,:]
-            # print("cur_R",cur_R.shape)
-            # print("cur_y",cur_y.shape)
-            # print("testing_y0",testing_y0.shape)
-            cur_y0 = torch.einsum('ij,kj->ki',cur_R,testing_y0).unsqueeze(1)
-            cur_y_conj = torch.einsum('ij,bksj->bksi',cur_R,cur_y)
-            func.set_R(cur_R)
+    if not args.no_quantitative:
+        for j, t_j in enumerate(t):
             with torch.no_grad():
-                pred_y = odeint(func, cur_y0, t_j).to(device)
-                loss = torch.mean(torch.norm(pred_y - cur_y_conj, dim=-1))
-                loss_meters[j].update(loss.item())
+                pred_y = odeint(func, testing_y0.unsqueeze(1), t_j).to(device)  # Lie Neuron takes additional feature dimension thus we need to unsqueeze(1)
+                cur_y = testing_y[j]    # 
+                loss = torch.mean(torch.norm(pred_y - cur_y, dim=-1))
 
-        print("conjugated loss at",t_end_list[j],"sec is", loss_meters[j].get_avg())
+                time_meter.update(time.time() - end)
+                print("loss at",t_end_list[j],"sec is", loss.item())
 
-    # if args.viz:
-    #     with torch.no_grad():
-    #         vis_pred_y = odeint(func, vis_y0.unsqueeze(0), vis_t).squeeze(1).to(device)
-    #         print(vis_pred_y.shape)
-    #         visualize(vis_y, vis_pred_y, func, ii)
-    #         ii += 1
+    if not args.no_test_augmentation:
+        # generate data for change of reference frame testing
+        hat_so3 = HatLayer(algebra_type='so3')
+        v = torch.rand((args.num_testing_augmentation,3))
+        v = torch.div(v,torch.norm(v,dim=-1).unsqueeze(-1))
+        phi = (math.pi-1e-6)*torch.rand(args.num_testing_augmentation,1)
+        v = phi*v
+        v_hat = hat_so3(v)
+        R = exp_so3(v_hat).to(device)
+
+        for j, t_j in enumerate(t):
+            cur_y = testing_y[j]    # (N, M_j, D)
+            loss_meter = RunningAverageMeter(1.00)
+            for k in range(args.num_testing_augmentation):
+                cur_R = R[k,:,:]
+                # print("cur_R",cur_R.shape)
+                # print("cur_y",cur_y.shape)
+                # print("testing_y0",testing_y0.shape)
+                cur_y0 = torch.einsum('ij,kj->ki',cur_R,testing_y0).unsqueeze(1)
+                cur_y_conj = torch.einsum('ij,bksj->bksi',cur_R,cur_y)
+                func.set_R(cur_R)
+                with torch.no_grad():
+                    pred_y = odeint(func, cur_y0, t_j).to(device)
+                    loss = torch.mean(torch.norm(pred_y - cur_y_conj, dim=-1))
+                    loss_meter.update(loss.item())
+
+            print("conjugated loss at",t_end_list[j],"sec is", loss_meter.get_avg())
+
+    if args.viz:
+        with torch.no_grad():
+            vis_pred_y = odeint(func, vis_y0.unsqueeze(0), vis_t).squeeze(1).to(device)
+            print(vis_pred_y.shape)
+            visualize(vis_y, vis_pred_y, func, ii)
+            ii += 1
         
     
     # visualize(val_true_y, pred_y, func, ii)
