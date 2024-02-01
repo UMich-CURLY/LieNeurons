@@ -23,7 +23,6 @@ from experiment.euler_poincare_eq_layers import *
 parser = argparse.ArgumentParser('Euler Poincare Equation Fitting')
 parser.add_argument('--method', type=str, default='dopri5')
 parser.add_argument('--num_training', type=int, default=10)
-parser.add_argument('--num_testing', type=int, default=10)
 parser.add_argument('--data_size', type=int, default=1000)
 parser.add_argument('--batch_time', type=int, default=10)
 parser.add_argument('--batch_size', type=int, default=20)
@@ -33,11 +32,12 @@ parser.add_argument('--save_freq', type=int, default=100)
 parser.add_argument('--viz', action='store_true')
 parser.add_argument('--gpu', type=int, default=0)
 parser.add_argument('--adjoint', action='store_true')
+parser.add_argument('--inertia_type', type=str, choices=['iss','model1'], default='iss')
 parser.add_argument('--fig_save_path', type=str, default='figures/euler_poincare_ln')
 parser.add_argument('--model_save_path', type=str, default='weights/euler_poincare_ln')
 parser.add_argument('--model_type', type=str, default='neural_ode')
-parser.add_argument('--training_config', type=str,
-                        default=os.path.dirname(os.path.abspath(__file__))+'/../config/euler_poincare/training_param.yaml')
+# parser.add_argument('--training_config', type=str,
+#                         default=os.path.dirname(os.path.abspath(__file__))+'/../config/euler_poincare/training_param.yaml')
 parser.add_argument('--log_writer_path', type=str, default='logs/euler_poincare_ln')
 args = parser.parse_args()
 
@@ -46,7 +46,7 @@ if args.adjoint:
 else:
     from torchdiffeq import odeint
 
-def init_writer(config):
+def init_writer():
     writer = SummaryWriter(
         args.log_writer_path+"_"+str(time.localtime()), args.model_type)
     writer.add_text("num_iterations: ", str(args.niters))
@@ -57,24 +57,26 @@ device = torch.device('cuda:' + str(args.gpu) if torch.cuda.is_available() else 
 
 
 torch.manual_seed(5566)
-training_y0 = torch.rand((args.num_training, 3)).to(device)
-testing_y0 = torch.rand((args.num_testing, 3)).to(device)
+if args.num_training >1:
+    training_y0 = torch.rand((args.num_training, 3)).to(device)
+else:
+    training_y0 = torch.tensor([[2., 1.,3.0]]).to(device)
 val_true_y0 = torch.tensor([[2., 1.,3.0]]).to(device)
 t = torch.linspace(0., 25., args.data_size).to(device)
 t_val = torch.linspace(0., 5., int(args.data_size/5)).to(device)
 class EulerPoincareEquation(nn.Module):
     
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
+    def __init__(self) -> None:
+        super().__init__()
         '''
         Inertia matrix of the ISS
         https://athena.ecs.csus.edu/~grandajj/ME296M/space.pdf
         page 7-62
         '''
-        # self.I = torch.Tensor([[12, 0., 0.],[0., 20., 0.],[0., 0., 5.]]).unsqueeze(0).to(device)
-        self.I = torch.Tensor([[12, -5., 7.],[-5., 20., -2.],[7., -2., 5.]]).unsqueeze(0).to(device)
-        # self.I = torch.Tensor([[12, 0, 0],[0, 20., 0],[0, 0, 5.]]).unsqueeze(0).to(device)
-        # self.I = torch.Tensor([[5410880., -246595., 2967671.],[-246595., 29457838., -47804.],[2967671., -47804., 26744180.]]).unsqueeze(0).to(device)
+        if args.inertia_type == 'iss':
+            self.I = torch.Tensor([[5410880., -246595., 2967671.],[-246595., 29457838., -47804.],[2967671., -47804., 26744180.]]).unsqueeze(0).to(device)
+        elif args.inertia_type == 'model1':
+            self.I = torch.Tensor([[12, -5., 7.],[-5., 20., -2.],[7., -2., 5.]]).unsqueeze(0).to(device)
         self.I_inv = torch.inverse(self.I)
         self.hat_layer = HatLayer(algebra_type='so3').to(device)
 
@@ -82,18 +84,7 @@ class EulerPoincareEquation(nn.Module):
         '''
         w: angular velocity (B,3) or (1,3)
         '''
-        # print("I",self.I.shape)
-        # print("w hat",self.hat_layer(w).shape)
-        # print("I inv",self.I_inv.shape)
-        # print("w",w.shape)
-        # print("w",w)
         w_v = w.unsqueeze(2)
-        # print("return",(-torch.matmul(self.I_inv,torch.matmul(self.hat_layer(w),torch.matmul(self.I,w_v)))).shape)
-        # print("----------------")
-        # print("w_v",w_v.shape)
-        # print("Iw",torch.matmul(self.I,w_v).shape)
-        # print("hat i w",torch.matmul(self.hat_layer(w),torch.matmul(self.I,w_v)).shape)
-        # print("I inv hat i w",torch.matmul(self.I_inv,torch.matmul(self.hat_layer(w),torch.matmul(self.I,w_v))).shape)
         return -torch.matmul(self.I_inv,torch.matmul(self.hat_layer(w),torch.matmul(self.I,w_v))).squeeze(2)
 
 
@@ -103,10 +94,6 @@ with torch.no_grad():
     for i in range(args.num_training):
         true_y = odeint(EulerPoincareEquation(), training_y0[i,:].unsqueeze(0), t, method='dopri5')
         training_y.append(true_y)   
-
-    # for i in range(args.num_testing):
-    #     true_y = odeint(EulerPoincareEquation(), testing_y0[i,:], t, method='dopri5')
-    #     testing_y.append(true_y)
 
     val_true_y = odeint(EulerPoincareEquation(), val_true_y0, t_val, method='dopri5')
 
@@ -222,9 +209,9 @@ if __name__ == '__main__':
     jj = 0
 
     # load yaml file
-    config = yaml.safe_load(open(args.training_config))
+    # config = yaml.safe_load(open(args.training_config))
 
-    writer = init_writer(config)
+    writer = init_writer()
 
     
     # true_y0 = rearrange(true_y0,'b d -> b 1 d')
@@ -241,11 +228,12 @@ if __name__ == '__main__':
         func = LNODEFunc5(device=device).to(device)
     elif args.model_type == 'LN_ode6':
         func = LNODEFunc6(device=device).to(device)
+    elif args.model_type == 'LN_ode7':
+        func = LNODEFunc7(device=device).to(device)
     elif args.model_type == 'neural_ode':
         func = ODEFunc().to(device)
     
     optimizer = optim.RMSprop(func.parameters(), lr=1e-3)
-    # optimizer = optim.Adam(func.parameters(), lr=1e-3)
     end = time.time()
 
     time_meter = RunningAverageMeter(0.97)
@@ -311,7 +299,7 @@ if __name__ == '__main__':
                         'loss': loss}
 
                 torch.save(state,  args.model_save_path +
-                        '_best_test_loss_acc.pt')
+                        '_best_val_loss_acc.pt')
             print("------------------------------")
 
         if itr % args.save_freq == 0:

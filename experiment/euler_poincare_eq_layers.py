@@ -35,6 +35,8 @@ class LNODEFunc(nn.Module):
         #     if isinstance(n, nn.Linear):
         #         nn.init.normal_(n.weight, mean=0, std=0.1)
                 # nn.init.constant_(m.bias, val=0)
+    def set_R(self,R):
+        self.R = R.to(self.R.device)
 
     def forward(self, t, x):
         # print(y.shape)
@@ -78,6 +80,8 @@ class LNODEFunc2(nn.Module):
         #     if isinstance(n, nn.Linear):
         #         nn.init.normal_(n.weight, mean=0, std=0.1)
                 # nn.init.constant_(m.bias, val=0)
+    def set_R(self,R):
+        self.R = R.to(self.R.device)
 
     def forward(self, t, x):
         # print(y.shape)
@@ -121,6 +125,8 @@ class LNODEFunc3(nn.Module):
         #     if isinstance(n, nn.Linear):
         #         nn.init.normal_(n.weight, mean=0, std=0.1)
                 # nn.init.constant_(m.bias, val=0)
+    def set_R(self,R):
+        self.R = R.to(self.R.device)
 
     def forward(self, t, x):
         # print(y.shape)
@@ -164,9 +170,11 @@ class LNODEFunc4(nn.Module):
         #     if isinstance(n, nn.Linear):
         #         nn.init.normal_(n.weight, mean=0, std=0.1)
                 # nn.init.constant_(m.bias, val=0)
+    def set_R(self,R):
+        self.R = R.to(self.R.device)
 
     def forward(self, t, x):
-        # print(y.shape)
+        # print(x.shape)
         x_reshape = rearrange(x,'b f d -> b f d 1')
         # print(self.R.device)
         m1 = self.map_m_to_m1(rearrange(torch.matmul(self.R,self.m),'k f -> 1 f k 1'))
@@ -178,7 +186,7 @@ class LNODEFunc4(nn.Module):
         M1 = torch.matmul(m1,m1.transpose(0,1))
         M2 = torch.matmul(m2,m2.transpose(0,1))
         # M3 = torch.matmul(m3,m3.transpose(0,1))
-
+    
         out = self.ln_bracket(x_reshape,M1,M2)  # [b f d 1]
         # out = torch.einsum('d k, b f k n -> b f d n',M3,out)
         out = self.linear(out)
@@ -207,6 +215,8 @@ class LNODEFunc5(nn.Module):
         #     if isinstance(n, nn.Linear):
         #         nn.init.normal_(n.weight, mean=0, std=0.1)
                 # nn.init.constant_(m.bias, val=0)
+    def set_R(self,R):
+        self.R = R.to(self.R.device)
 
     def forward(self, t, x):
         # print(y.shape)
@@ -249,6 +259,8 @@ class LNODEFunc6(nn.Module):
         #     if isinstance(n, nn.Linear):
         #         nn.init.normal_(n.weight, mean=0, std=0.1)
                 # nn.init.constant_(m.bias, val=0)
+    def set_R(self,R):
+        self.R = R.to(self.R.device)
 
     def forward(self, t, x):
         # print(y.shape)
@@ -270,21 +282,72 @@ class LNODEFunc6(nn.Module):
         out = rearrange(out,'b f d 1 -> b f d')
         return out
 
+class LNODEFunc7(nn.Module):
+
+    def __init__(self, R=torch.eye(3), device='cpu'):
+        super(LNODEFunc7, self).__init__()
+
+        self.num_m_feature = 20
+        self.R = R.to(device)
+        self.m = nn.Parameter(torch.zeros((3,self.num_m_feature)))
+        self.map_m_to_m1 = LNLinearAndKillingRelu(self.num_m_feature,3,algebra_type='so3')
+        self.map_m_to_m2 = LNLinearAndKillingRelu(self.num_m_feature,3,algebra_type='so3')
+        # self.map_m_to_m3 = LNLinearAndKillingRelu(self.num_m_feature,3,algebra_type='so3')
+        self.ln_bracket = LNLinearAndLieBracketChannelMix(1,20,algebra_type='so3',residual_connect=True)
+        # self.ln_bracket2 = LNLinearAndLieBracket(20,1,algebra_type='so3')
+        self.linear = LNLinear(20,1)
+        # self.ln_relu = LNLinearAndKillingRelu(20,1,algebra_type='so3')
+
+        nn.init.normal_(self.m, mean=0, std=0.1)
+        # for n in self.net.modules():
+        #     if isinstance(n, nn.Linear):
+        #         nn.init.normal_(n.weight, mean=0, std=0.1)
+                # nn.init.constant_(m.bias, val=0)
+    def set_R(self,R):
+        self.R = R.to(self.R.device)
+        
+    def forward(self, t, x):
+        # print(x.shape)
+        x_reshape = rearrange(x,'b f d -> b f d 1')
+        # print(self.R.device)
+        m1 = self.map_m_to_m1(rearrange(torch.matmul(self.R,self.m),'k f -> 1 f k 1'))
+        m2 = self.map_m_to_m2(rearrange(torch.matmul(self.R,self.m),'k f -> 1 f k 1'))
+        # m3 = self.map_m_to_m3(rearrange(torch.matmul(self.R,self.m),'k f -> 1 f k 1'))
+        m1 = rearrange(m1,'1 f k 1 -> k f')
+        m2 = rearrange(m2,'1 f k 1 -> k f')
+        # m3 = rearrange(m3,'1 f k 1 -> k f')
+        M1 = torch.matmul(m1,m1.transpose(0,1))
+        M2 = torch.matmul(m2,m2.transpose(0,1))
+        # M3 = torch.matmul(m3,m3.transpose(0,1))
+
+        out = self.ln_bracket(x_reshape,M1,M2)  # [b f d 1]
+        # out = torch.einsum('d k, b f k n -> b f d n',M3,out)
+        out = self.linear(out)
+        out = rearrange(out,'b f d 1 -> b f d')
+        return out
+
 class ODEFunc(nn.Module):
 
     def __init__(self):
         super(ODEFunc, self).__init__()
 
         self.net = nn.Sequential(
-            nn.Linear(3, 50),
-            nn.Tanh(),
-            nn.Linear(50, 3),
+            nn.Linear(3, 512),
+            nn.ReLU(),
+            nn.Linear(512, 512),
+            nn.ReLU(),
+            nn.Linear(512, 3),
         )
+        
+        self.R = torch.eye(3)
 
         for m in self.net.modules():
             if isinstance(m, nn.Linear):
                 nn.init.normal_(m.weight, mean=0, std=0.1)
                 nn.init.constant_(m.bias, val=0)
+
+    def set_R(self,R):
+        self.R = R.to(self.R.device)
 
     def forward(self, t, y):
         # print(y.shape)
