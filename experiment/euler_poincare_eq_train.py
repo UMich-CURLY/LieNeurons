@@ -214,10 +214,14 @@ if __name__ == '__main__':
         func = LNODEFunc6(device=device).to(device)
     elif args.model_type == 'LN_ode7':
         func = LNODEFunc7(device=device).to(device)
+    elif args.model_type == 'LN_ode8':
+        func = LNODEFunc8(device=device).to(device)
     elif args.model_type == 'neural_ode':
         func = ODEFunc().to(device)
     elif args.model_type == 'neural_ode2':
         func = ODEFunc2().to(device)
+    elif args.model_type == 'neural_ode3':
+        func = ODEFunc3().to(device)
     
     optimizer = optim.RMSprop(func.parameters(), lr=1e-3)
     end = time.time()

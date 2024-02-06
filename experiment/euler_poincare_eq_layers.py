@@ -325,6 +325,27 @@ class LNODEFunc7(nn.Module):
         out = self.linear(out)
         out = rearrange(out,'b f d 1 -> b f d')
         return out
+    
+class LNODEFunc8(nn.Module):
+    def __init__(self, R=torch.eye(3), device='cpu'):
+        super(LNODEFunc8, self).__init__()
+
+        self.R = R.to(device)
+        self.ln_bracket = LNLinearAndLieBracket(1,20,algebra_type='so3')
+        self.linear = LNLinear(20,1)
+
+    def set_R(self,R):
+        self.R = R.to(self.R.device)
+        
+    def forward(self, t, x):
+        # print(x.shape)
+        x_reshape = rearrange(x,'b f d -> b f d 1')
+
+        out = self.ln_bracket(x_reshape)  # [b f d 1]
+        # out = torch.einsum('d k, b f k n -> b f d n',M3,out)
+        out = self.linear(out)
+        out = rearrange(out,'b f d 1 -> b f d')
+        return out
 
 class ODEFunc(nn.Module):
 
@@ -360,6 +381,41 @@ class ODEFunc2(nn.Module):
 
         self.net = nn.Sequential(
             nn.Linear(3, 128),
+            nn.ReLU(),
+            nn.Linear(128, 128),
+            nn.ReLU(),
+            nn.Linear(128, 3),
+        )
+        
+        self.R = torch.eye(3)
+
+        for m in self.net.modules():
+            if isinstance(m, nn.Linear):
+                nn.init.normal_(m.weight, mean=0, std=0.1)
+                nn.init.constant_(m.bias, val=0)
+
+    def set_R(self,R):
+        self.R = R.to(self.R.device)
+
+    def forward(self, t, y):
+        # print(y.shape)
+        return self.net(y)
+    
+class ODEFunc3(nn.Module):
+
+    def __init__(self):
+        super(ODEFunc3, self).__init__()
+
+        self.net = nn.Sequential(
+            nn.Linear(3, 128),
+            nn.ReLU(),
+            nn.Linear(128, 512),
+            nn.ReLU(),
+            nn.Linear(512, 1024),
+            nn.ReLU(),
+            nn.Linear(1024, 512),
+            nn.ReLU(),
+            nn.Linear(512, 128),
             nn.ReLU(),
             nn.Linear(128, 128),
             nn.ReLU(),

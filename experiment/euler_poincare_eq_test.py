@@ -24,8 +24,8 @@ from experiment.euler_poincare_eq_layers import *
 
 parser = argparse.ArgumentParser('Euler Poincare Equation Fitting')
 parser.add_argument('--method', type=str, default='dopri5')
-parser.add_argument('--no_quantitative', type=bool, default=False)
-parser.add_argument('--no_test_augmentation', type=bool, default=False)
+parser.add_argument('--no_quantitative', action='store_true')
+parser.add_argument('--no_test_augmentation', action='store_true')
 parser.add_argument('--num_testing', type=int, default=10)
 parser.add_argument('--num_testing_augmentation', type=int, default=10)
 parser.add_argument('--data_size', type=int, default=1000)
@@ -129,6 +129,8 @@ def makedirs(dirname):
 def visualize(true_y, pred_y, odefunc, itr):
     makedirs(args.fig_save_path)
     # plt.rcParams['text.usetex'] = True
+
+    plt.rcParams.update({'font.size': 22})
     fig1 = plt.figure(1)
     # fig1.cla()
     
@@ -138,7 +140,7 @@ def visualize(true_y, pred_y, odefunc, itr):
     plt.title('Trajectories (x)')
     plt.xlabel('t')
     plt.ylabel('x')
-    plt.legend(['Groundtruth', 'Lie Neurons (x)'])
+    plt.legend(['Ground Truth', 'Lie Neurons (x)'])
     # ax_traj.set_ylim(-2, 2)
     # fig1.legend()
 
@@ -171,7 +173,7 @@ def visualize(true_y, pred_y, odefunc, itr):
     plt.title('Trajectories')
     plt.xlabel('t')
     plt.ylabel('x, y, z')
-    plt.legend(['Groundtruth x', 'Groundtruth y', 'Groundtruth z', 'Lie Neurons x', 'Lie Neurons y', 'Lie Neurons z'])
+    plt.legend(['Ground Truth x', 'Ground Truth y', 'Ground Truth z', 'Lie Neurons (No Mixing) x', 'Lie Neurons (No Mixing) y', 'Lie Neurons (No Mixing) z'])
 
     ax = plt.figure(5).add_subplot(projection='3d')
     ax.plot(true_y.cpu().numpy()[:, 0, 0],true_y.cpu().numpy()[:, 0, 1],true_y.cpu().numpy()[:, 0, 2], '-', color='royalblue')
@@ -180,7 +182,7 @@ def visualize(true_y, pred_y, odefunc, itr):
     ax.set_xlabel('x')
     ax.set_ylabel('y')
     ax.set_zlabel('z')
-    ax.legend(['Groundtruth', 'Lie Neurons'])
+    ax.legend(['Ground Truth', 'Lie Neurons (No Mixing)'])
     # fig = plt.figure(figsize=(12, 4), facecolor='white')
     # ax_traj = fig.add_subplot(131, frameon=False)
     # ax_phase = fig.add_subplot(132, frameon=False)
@@ -270,6 +272,8 @@ if __name__ == '__main__':
         func = LNODEFunc6(device=device).to(device)
     elif args.model_type == 'LN_ode7':
         func = LNODEFunc7(device=device).to(device)
+    elif args.model_type == 'LN_ode8':
+        func = LNODEFunc8(device=device).to(device)
     elif args.model_type == 'neural_ode':
         func = ODEFunc().to(device)
 
@@ -329,6 +333,7 @@ if __name__ == '__main__':
 
     if args.viz:
         with torch.no_grad():
+            func.set_R(torch.eye(3).to(device))
             vis_pred_y = odeint(func, vis_y0.unsqueeze(0), vis_t).squeeze(1).to(device)
             print(vis_pred_y.shape)
             visualize(vis_y, vis_pred_y, func, ii)
