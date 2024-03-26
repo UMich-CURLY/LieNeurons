@@ -217,6 +217,25 @@ def main():
         model = SO3EquivariantBracketLayers(2).to(device)
     elif config['model_type'] == "MLP":
         model = MLP(6).to(device)
+    elif config['model_type'] == "EMLP":
+        import emlp.nn.pytorch as emlpnn
+        from emlp.reps import T,V
+        from emlp.groups import SO
+        G = SO(3)
+        reps = 2*V(G)
+        reps_out = V(G)
+        class EMLPModel(nn.Module):
+            def __init__(self):
+                super(EMLPModel, self).__init__()
+                self.model = emlpnn.EMLP(reps, reps_out, group=G, num_layers=3,ch=128)
+
+            def forward(self, x):
+                B,_,_,_ = x.shape
+                x = torch.reshape(x, (B, -1))
+                return self.model(x)
+            
+        model = EMLPModel().to(device)
+
     # elif config['model_type'] == "LN_bracket_no_residual":
     #     model = SO3EquivariantBracketNoResidualConnectLayers(2).to(device)
 

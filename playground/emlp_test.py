@@ -1,7 +1,7 @@
 import torch
 
 import emlp.nn.pytorch as nn
-from emlp.reps import T,V
+from emlp.reps import T,V,sparsify_basis
 from emlp.groups import SO
 
 
@@ -12,6 +12,10 @@ if __name__ == '__main__':
     reps = V(G)
     reps_out = V(G)
 
+    print(reps.rho(G))
+    print(reps.size())
     Q = (reps>>reps_out).equivariant_basis() 
     print(f"Basis matrix of shape {Q.shape}")
+    print(sparsify_basis(Q).reshape(3,3))
+    print(reps(G).size())
     # Define the output representation

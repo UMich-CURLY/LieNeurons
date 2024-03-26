@@ -72,6 +72,15 @@ def log_SO3(R):
   return (theta/(2*torch.sin(theta)))[:,None,None]*(R-R.transpose(-1,-2))
 
 
+def BCH_first_order_approx(X,Y):
+  return X+Y
+
+def BCH_second_order_approx(X,Y):
+  return X+Y+1/2*lie_bracket(X,Y)
+
+def BCH_third_order_approx(X,Y):
+  return X+Y+1/2*lie_bracket(X,Y)+1/12*lie_bracket(X,lie_bracket(X,Y))-1/12*lie_bracket(Y,lie_bracket(X,Y))
+
 def BCH_approx(X,Y):
   return X+Y+1/2*lie_bracket(X,Y)+1/12*lie_bracket(X,lie_bracket(X,Y))-1/12*lie_bracket(Y,lie_bracket(X,Y))\
             -1/24*lie_bracket(Y,lie_bracket(X,lie_bracket(X,Y)))-1/720*lie_bracket(Y,lie_bracket(Y,lie_bracket(Y,lie_bracket(Y,X))))\
