@@ -12,8 +12,13 @@ print_freq: 100
 # model_type: "LN_bracket"
 # model_path: "/home/justin/code/LieNeurons/weights/0124_so3_bch_bracket_best_test_loss_acc.pt"
 
-model_type: "MLP"
-model_path: "/home/justin/code/LieNeurons/weights/0121_so3_bch_mlp_4_layers_1024_best_test_loss_acc.pt"
+# model_type: "MLP"
+# model_path: "/home/justin/code/LieNeurons/weights/0121_so3_bch_mlp_4_layers_1024_best_test_loss_acc.pt"
+
+model_type: "EMLP"
+model_path: "/home/justin/code/LieNeurons/weights/EMLP_best_test_loss_acc.pt"
 
 batch_size: 1
 shuffle: False
+
+calculate_eq_approx_error: True

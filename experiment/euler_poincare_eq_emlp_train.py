@@ -107,6 +107,24 @@ class EMLPFunc(nn.Module):
     def forward(self, t, y):
         return self.net(y)
     
+class EMLPFunc2(nn.Module):
+    def __init__(self):
+        super(EMLPFunc2, self).__init__()
+
+        G = SO(3)
+        rep_in = V(G)+T(G)
+        rep_out = V(G)
+        self.m = nn.Parameter(torch.randn(1,9))
+        self.net = emlpnn.EMLP(rep_in,rep_out,group=G,num_layers=3,ch=128).to(device)
+        
+    def set_R(self,R):
+        self.R = R.to(self.R.device)
+
+    def forward(self, t, y):
+        B = y.shape[0]
+        y = torch.cat([y,self.m.repeat(B,1)],1)
+        return self.net(y)
+    
 
 with torch.no_grad():
     training_y = []
@@ -243,6 +261,8 @@ if __name__ == '__main__':
         func = ODEFunc3().to(device)
     elif args.model_type == 'emlp':
         func = EMLPFunc().to(device)
+    elif args.model_type == 'emlp2':
+        func = EMLPFunc2().to(device)
     
     optimizer = optim.RMSprop(func.parameters(), lr=1e-3)
     end = time.time()

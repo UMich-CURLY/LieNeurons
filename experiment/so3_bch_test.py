@@ -47,6 +47,23 @@ def test_bch(model, test_loader, config, device):
         error_fro_conj_sum = 0.0
         error_log_conj_sum = 0.0
         
+        if config['calculate_eq_approx_error']:
+            error_fro_eq_first_order_sum = 0.0
+            error_log_eq_first_order_sum = 0.0
+            error_fro_eq_second_order_sum = 0.0
+            error_log_eq_second_order_sum = 0.0
+            error_fro_eq_third_order_sum = 0.0
+            error_log_eq_third_order_sum = 0.0
+
+            error_fro_eq_first_order_conj_sum = 0.0
+            error_log_eq_first_order_conj_sum = 0.0
+            error_fro_eq_second_order_conj_sum = 0.0
+            error_log_eq_second_order_conj_sum = 0.0
+            error_fro_eq_third_order_conj_sum = 0.0
+            error_log_eq_third_order_conj_sum = 0.0
+
+
+        
         diff_output_sum = 0.0
         total_num = 0
         total_num_conj = 0
@@ -81,6 +98,31 @@ def test_bch(model, test_loader, config, device):
             error_fro_sum += error_fro.sum().item()
             error_log_sum += error_log.sum().item()
             total_num += x.shape[0]
+
+            if config['calculate_eq_approx_error']:
+                # compute bch first order approx
+                residual_R_eq_first_order = R1 @ R2 @ exp_so3(-BCH_first_order_approx(hat_layer(x[:, 0, :, 0]),hat_layer(x[:, 1, :, 0])))
+                residual_log_eq_first_order = log_SO3(residual_R_eq_first_order)
+                error_log_eq_first_order = torch.linalg.vector_norm(vee(residual_log_eq_first_order, algebra_type='so3'), dim=1)
+                error_fro_eq_first_order = torch.linalg.matrix_norm(residual_R_eq_first_order - torch.eye(3).to(device))
+                error_fro_eq_first_order_sum += error_fro_eq_first_order.sum().item()
+                error_log_eq_first_order_sum += error_log_eq_first_order.sum().item()
+
+                # compute bch second order approx
+                residual_R_eq_second_order = R1 @ R2 @ exp_so3(-BCH_second_order_approx(hat_layer(x[:, 0, :, 0]),hat_layer(x[:, 1, :, 0])))
+                residual_log_eq_second_order = log_SO3(residual_R_eq_second_order)
+                error_log_eq_second_order = torch.linalg.vector_norm(vee(residual_log_eq_second_order, algebra_type='so3'), dim=1)
+                error_fro_eq_second_order = torch.linalg.matrix_norm(residual_R_eq_second_order - torch.eye(3).to(device))
+                error_fro_eq_second_order_sum += error_fro_eq_second_order.sum().item()
+                error_log_eq_second_order_sum += error_log_eq_second_order.sum().item()
+
+                # compute bch third order approx
+                residual_R_eq_third_order = R1 @ R2 @ exp_so3(-BCH_third_order_approx(hat_layer(x[:, 0, :, 0]),hat_layer(x[:, 1, :, 0])))
+                residual_log_eq_third_order = log_SO3(residual_R_eq_third_order)
+                error_log_eq_third_order = torch.linalg.vector_norm(vee(residual_log_eq_third_order, algebra_type='so3'), dim=1)
+                error_fro_eq_third_order = torch.linalg.matrix_norm(residual_R_eq_third_order - torch.eye(3).to(device))
+                error_fro_eq_third_order_sum += error_fro_eq_third_order.sum().item()
+                error_log_eq_third_order_sum += error_log_eq_third_order.sum().item()
 
             # print(f"{error_fro=}")
             # print(f"{error_log=}")
@@ -130,6 +172,30 @@ def test_bch(model, test_loader, config, device):
                 error_log_conj_sum += error_log_conj.sum().item()
                 total_num_conj += x_conj_j.shape[0]
                 
+                if config['calculate_eq_approx_error']:
+                    # compute bch first order approx
+                    residual_R_eq_first_order = R1 @ R2 @ exp_so3(-BCH_first_order_approx(hat_layer(x[:, 0, :, 0]),hat_layer(x[:, 1, :, 0])))
+                    residual_log_eq_first_order = log_SO3(residual_R_eq_first_order)
+                    error_log_eq_first_order = torch.linalg.vector_norm(vee(residual_log_eq_first_order, algebra_type='so3'), dim=1)
+                    error_fro_eq_first_order = torch.linalg.matrix_norm(residual_R_eq_first_order - torch.eye(3).to(device))
+                    error_fro_eq_first_order_conj_sum += error_fro_eq_first_order.sum().item()
+                    error_log_eq_first_order_conj_sum += error_log_eq_first_order.sum().item()
+
+                    # compute bch second order approx
+                    residual_R_eq_second_order = R1 @ R2 @ exp_so3(-BCH_second_order_approx(hat_layer(x[:, 0, :, 0]),hat_layer(x[:, 1, :, 0])))
+                    residual_log_eq_second_order = log_SO3(residual_R_eq_second_order)
+                    error_log_eq_second_order = torch.linalg.vector_norm(vee(residual_log_eq_second_order, algebra_type='so3'), dim=1)
+                    error_fro_eq_second_order = torch.linalg.matrix_norm(residual_R_eq_second_order - torch.eye(3).to(device))
+                    error_fro_eq_second_order_conj_sum += error_fro_eq_second_order.sum().item()
+                    error_log_eq_second_order_conj_sum += error_log_eq_second_order.sum().item()
+
+                    # compute bch third order approx
+                    residual_R_eq_third_order = R1 @ R2 @ exp_so3(-BCH_third_order_approx(hat_layer(x[:, 0, :, 0]),hat_layer(x[:, 1, :, 0])))
+                    residual_log_eq_third_order = log_SO3(residual_R_eq_third_order)
+                    error_log_eq_third_order = torch.linalg.vector_norm(vee(residual_log_eq_third_order, algebra_type='so3'), dim=1)
+                    error_fro_eq_third_order = torch.linalg.matrix_norm(residual_R_eq_third_order - torch.eye(3).to(device))
+                    error_fro_eq_third_order_conj_sum += error_fro_eq_third_order.sum().item()
+                    error_log_eq_third_order_conj_sum += error_log_eq_third_order.sum().item()
 
                 # conj_output_hat_conj_back = torch.matmul(R_j.transpose(1,2), torch.matmul(conj_output_hat, R_j))
                 # conj_output_conj_back = vee_so3(conj_output_hat_conj_back)
@@ -149,6 +215,19 @@ def test_bch(model, test_loader, config, device):
                 # loss_sum += loss.item()
 
                 # print('diff_output: ', diff_output)
+        if config['calculate_eq_approx_error']:
+            print("first order approx error fro avg : ",error_fro_eq_first_order_sum/total_num)
+            print("first order approx error log avg : ",error_log_eq_first_order_sum/total_num)
+            print("second order approx error fro avg : ",error_fro_eq_second_order_sum/total_num)
+            print("second order approx error log avg : ",error_log_eq_second_order_sum/total_num)
+            print("third order approx error fro avg : ",error_fro_eq_third_order_sum/total_num)
+            print("third order approx error log avg : ",error_log_eq_third_order_sum/total_num)
+            print("first order approx error fro conj avg : ",error_fro_eq_first_order_conj_sum/total_num_conj)
+            print("first order approx error log conj avg : ",error_log_eq_first_order_conj_sum/total_num_conj)
+            print("second order approx error fro conj avg : ",error_fro_eq_second_order_conj_sum/total_num_conj)
+            print("second order approx error log conj avg : ",error_log_eq_second_order_conj_sum/total_num_conj)
+            print("third order approx error fro conj avg : ",error_fro_eq_third_order_conj_sum/total_num_conj)
+            print("third order approx error log conj avg : ",error_log_eq_third_order_conj_sum/total_num_conj)
 
         error_fro_avg = error_fro_sum/total_num
         error_log_avg = error_log_sum/total_num
@@ -187,6 +266,24 @@ def main():
         model = SO3EquivariantBracketLayers(2).to(device)
     elif config['model_type'] == "MLP":
         model = MLP(6).to(device)
+    elif config['model_type'] == "EMLP":
+        import emlp.nn.pytorch as emlpnn
+        from emlp.reps import T,V
+        from emlp.groups import SO
+        G = SO(3)
+        reps = 2*V(G)
+        reps_out = V(G)
+        class EMLPModel(nn.Module):
+            def __init__(self):
+                super(EMLPModel, self).__init__()
+                self.model = emlpnn.EMLP(reps, reps_out, group=G, num_layers=3,ch=128)
+
+            def forward(self, x):
+                B,_,_,_ = x.shape
+                x = torch.reshape(x, (B, -1))
+                return self.model(x)
+            
+        model = EMLPModel().to(device)
     elif config['model_type'] == "VN_relu":
         model = SO3EquivariantVNReluLayers(2).to(device)
 
