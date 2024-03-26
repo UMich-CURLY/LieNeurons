@@ -52,14 +52,17 @@ def exp_so3(A):
 def log_SO3(R):
 
   # print("trace: ", torch.trace(R))
-  print("R",R)
-  print("trace",(batch_trace(R)-1)/2.0)
-  theta = torch.acos((batch_trace(R)-1)/2.0)
-  theta2 = torch.asin(torch.sqrt((3-batch_trace(R))*(1+batch_trace(R)))/2.0)
-  print("theta: ", theta)
-  print("theta2: ", theta2)
+  # print("R",R)
+  cos_R = (batch_trace(R)-1)/2.0
+  # print("cos_R", cos_R)
+  theta = torch.acos(torch.clamp(cos_R, -1+1e-7, 1-1e-7))
+  # theta2 = torch.asin(torch.sqrt((3-batch_trace(R))*(1+batch_trace(R)))/2.0)
+  # print("theta: ", theta)
+  # print("theta2: ", theta2)
 
-
+  if torch.isnan(theta):
+    raise ValueError("theta is nan")
+    # return torch.zeros((3,3)).to(R.device)
   # if torch.isnan(theta):
   #   return torch.zeros((3,3)).to(R.device)
   # print("theta: ", theta)

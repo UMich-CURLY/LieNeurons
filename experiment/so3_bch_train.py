@@ -236,6 +236,8 @@ def main():
             
         model = EMLPModel().to(device)
 
+    elif config['model_type'] == "VN_relu":
+        model = SO3EquivariantVNReluLayers(2).to(device)
     # elif config['model_type'] == "LN_bracket_no_residual":
     #     model = SO3EquivariantBracketNoResidualConnectLayers(2).to(device)
 

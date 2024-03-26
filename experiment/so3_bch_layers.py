@@ -14,6 +14,35 @@ from einops.layers.torch import Rearrange
 
 from core.lie_alg_util import *
 from core.lie_neurons_layers import *
+from core.vn_layers import *
+
+
+class SO3EquivariantVNReluLayers(nn.Module):
+    def __init__(self, in_channels):
+        super(SO3EquivariantVNReluLayers, self).__init__()
+        feat_dim = 1024
+        share_nonlinearity = False
+        leaky_relu = True
+        self.ln_fc = VNLinearAndLeakyReLU(
+            in_channels, feat_dim, share_nonlinearity=share_nonlinearity, leaky_relu=leaky_relu, dim=4)
+        self.ln_fc2 = VNLinearAndLeakyReLU(feat_dim, feat_dim,share_nonlinearity=share_nonlinearity,leaky_relu=leaky_relu, dim=4)
+        self.ln_fc3 = VNLinearAndLeakyReLU(feat_dim, feat_dim,share_nonlinearity=share_nonlinearity,leaky_relu=leaky_relu, dim=4)
+        self.ln_fc4 = VNLinearAndLeakyReLU(feat_dim, feat_dim,share_nonlinearity=share_nonlinearity,leaky_relu=leaky_relu, dim=4)
+
+        self.fc_final = nn.Linear(feat_dim, 1, bias=False)
+
+    def forward(self, x):
+        '''
+        x input of shape [B, F, 3, 1]
+        '''
+        x = self.ln_fc(x)
+        x = self.ln_fc2(x)
+        x = self.ln_fc3(x)
+        x = self.ln_fc4(x)
+
+        x = torch.permute(x, (0, 3, 2, 1))  # [B, 1, 3, F]
+        x_out = rearrange(self.fc_final(x), 'b 1 k 1 -> b k')   # [B, 3]
+        return x_out
 
 class SO3EquivariantReluLayers(nn.Module):
     def __init__(self, in_channels):
