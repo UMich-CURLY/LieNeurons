@@ -174,7 +174,7 @@ def test_bch(model, test_loader, config, device):
                 
                 if config['calculate_eq_approx_error']:
                     # compute bch first order approx
-                    residual_R_eq_first_order = R1 @ R2 @ exp_so3(-BCH_first_order_approx(hat_layer(x[:, 0, :, 0]),hat_layer(x[:, 1, :, 0])))
+                    residual_R_eq_first_order = R1 @ R2 @ exp_so3(-BCH_first_order_approx(hat_layer(x_conj_j[:, 0, :, 0]),hat_layer(x_conj_j[:, 1, :, 0])))
                     residual_log_eq_first_order = log_SO3(residual_R_eq_first_order)
                     error_log_eq_first_order = torch.linalg.vector_norm(vee(residual_log_eq_first_order, algebra_type='so3'), dim=1)
                     error_fro_eq_first_order = torch.linalg.matrix_norm(residual_R_eq_first_order - torch.eye(3).to(device))
@@ -182,7 +182,7 @@ def test_bch(model, test_loader, config, device):
                     error_log_eq_first_order_conj_sum += error_log_eq_first_order.sum().item()
 
                     # compute bch second order approx
-                    residual_R_eq_second_order = R1 @ R2 @ exp_so3(-BCH_second_order_approx(hat_layer(x[:, 0, :, 0]),hat_layer(x[:, 1, :, 0])))
+                    residual_R_eq_second_order = R1 @ R2 @ exp_so3(-BCH_second_order_approx(hat_layer(x_conj_j[:, 0, :, 0]),hat_layer(x_conj_j[:, 1, :, 0])))
                     residual_log_eq_second_order = log_SO3(residual_R_eq_second_order)
                     error_log_eq_second_order = torch.linalg.vector_norm(vee(residual_log_eq_second_order, algebra_type='so3'), dim=1)
                     error_fro_eq_second_order = torch.linalg.matrix_norm(residual_R_eq_second_order - torch.eye(3).to(device))
@@ -190,7 +190,7 @@ def test_bch(model, test_loader, config, device):
                     error_log_eq_second_order_conj_sum += error_log_eq_second_order.sum().item()
 
                     # compute bch third order approx
-                    residual_R_eq_third_order = R1 @ R2 @ exp_so3(-BCH_third_order_approx(hat_layer(x[:, 0, :, 0]),hat_layer(x[:, 1, :, 0])))
+                    residual_R_eq_third_order = R1 @ R2 @ exp_so3(-BCH_third_order_approx(hat_layer(x_conj_j[:, 0, :, 0]),hat_layer(x_conj_j[:, 1, :, 0])))
                     residual_log_eq_third_order = log_SO3(residual_R_eq_third_order)
                     error_log_eq_third_order = torch.linalg.vector_norm(vee(residual_log_eq_third_order, algebra_type='so3'), dim=1)
                     error_fro_eq_third_order = torch.linalg.matrix_norm(residual_R_eq_third_order - torch.eye(3).to(device))

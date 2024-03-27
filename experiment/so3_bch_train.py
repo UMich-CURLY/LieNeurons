@@ -227,7 +227,7 @@ def main():
         class EMLPModel(nn.Module):
             def __init__(self):
                 super(EMLPModel, self).__init__()
-                self.model = emlpnn.EMLP(reps, reps_out, group=G, num_layers=3,ch=128)
+                self.model = emlpnn.EMLP(reps, reps_out, group=G, num_layers=4,ch=1024)
 
             def forward(self, x):
                 B,_,_,_ = x.shape
@@ -240,6 +240,8 @@ def main():
         model = SO3EquivariantVNReluLayers(2).to(device)
     # elif config['model_type'] == "LN_bracket_no_residual":
     #     model = SO3EquivariantBracketNoResidualConnectLayers(2).to(device)
+        
+    print("total number of parameters: ", sum(p.numel() for p in model.parameters()))
 
     train(model, train_loader, test_loader, config, device)
 
