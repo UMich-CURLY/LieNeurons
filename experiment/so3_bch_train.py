@@ -19,13 +19,13 @@ from torch.utils.data import Dataset, DataLoader
 from core.lie_neurons_layers import *
 from experiment.so3_bch_layers import *
 from data_loader.so3_bch_data_loader import *
+from experiment.so3_bch_test import test_bch
 
 
 def frobenius_norm_loss(x,y,z):
     # || exp^x @ exp^y @ exp^-z - I ||_f
     diff = torch.matmul(torch.matmul(exp_so3(x), exp_so3(y)), exp_so3(-z)) - torch.eye(3).to(x.device)
     frobenius_norm = torch.norm(diff, p='fro')
-
     return frobenius_norm
 
 
@@ -80,7 +80,7 @@ def test_frobenius(model, test_loader, criterion, config, device):
 
     return loss_avg
 
-def train(model, train_loader, test_loader, config, device='cpu'):
+def train(model, train_loader, test_loader,test_loader_1, config, device='cpu'):
 
     writer = init_writer(config)
 
@@ -92,13 +92,21 @@ def train(model, train_loader, test_loader, config, device='cpu'):
     # scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma=config['learning_rate_decay_rate'])
     # scheduler = optim.lr_scheduler.LinearLR(optimizer,total_iters=config['num_epochs'])
 
-    # if config['resume_training']:
-    #     checkpoint = torch.load(config['resume_model_path'])
-    #     model.load_state_dict(checkpoint['model_state_dict'])
-    #     optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-    #     start_epoch = checkpoint['epoch']
-    # else:
-    start_epoch = 0
+    if config['resume_training']:
+        print("resume training from ", config['resume_model_path'])
+        checkpoint = torch.load(config['resume_model_path'])
+        model.load_state_dict(checkpoint['model_state_dict'])
+        optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+        start_epoch = checkpoint['epoch']
+        
+        print("start from epoch ", start_epoch)
+        print("loss: ",checkpoint['loss'])
+        print("test loss: ", checkpoint['test loss'])
+        # print(model.model.network[0].linear.weight)
+        print(model.model.network[0].bilinear.bi_params)
+    else:
+        start_epoch = 0
+
     hat_so3 = HatLayer(algebra_type='so3').to(device)
 
     best_loss = float("inf")
@@ -166,6 +174,24 @@ def train(model, train_loader, test_loader, config, device='cpu'):
 
             torch.save(state, config['model_save_path'] +
                        '_best_test_loss_acc.pt')
+            
+            # print(model.model.network[0].linear.weight)
+            
+            print(model.model.network[0].bilinear.bi_params)
+
+            # Temporary testing because we're unable to save emlp model correctly
+            test_config = yaml.safe_load(open(os.path.dirname(os.path.abspath(__file__))+'/../config/so3_bch/testing_param.yaml'))
+            error_fro_avg, error_log_avg, error_fro_conj_avg, error_log_conj_avg, diff_output_avg = test_bch(model, test_loader_1, test_config, device)
+            print("error fro avg: ", error_fro_avg)
+            print("error log avg: ", error_log_avg)
+            print("error fro conj avg: ", error_fro_conj_avg)
+            print("error log conj avg: ", error_log_conj_avg)
+
+        # print("test_loss type:",type(test_loss_equiv))
+        # # print("avg diff output type: ", diff_output_avg.dtype)
+        # print("test with augmentation loss: ", test_loss_equiv)
+        print("avg diff output: ", diff_output_avg)
+
         print("------------------------------")
         # print("Finished epoch %d / %d, training top 1 acc: %.4f, training top 5 acc: %.4f, \
         #       validation top1 acc: %.4f, validation top 5 acc: %.4f" %\
@@ -204,10 +230,12 @@ def main():
     train_loader = DataLoader(dataset=training_set, batch_size=config['batch_size'],
                               shuffle=config['shuffle'])
 
-    test_set = so3BchDataSet(
+    test_set = so3BchTestDataSet(
         config['test_data_path'], device=device)
     test_loader = DataLoader(dataset=test_set, batch_size=config['batch_size'],
                              shuffle=config['shuffle'])
+    test_loader_1 = DataLoader(dataset=test_set, batch_size=1,
+                                shuffle=config['shuffle'])
 
     if config['model_type'] == "LN_relu_bracket":
         model = SO3EquivariantReluBracketLayers(2).to(device)
@@ -227,7 +255,7 @@ def main():
         class EMLPModel(nn.Module):
             def __init__(self):
                 super(EMLPModel, self).__init__()
-                self.model = emlpnn.EMLP(reps, reps_out, group=G, num_layers=4,ch=1024)
+                self.model = emlpnn.EMLP(reps, reps_out, group=G, num_layers=3,ch=10)
 
             def forward(self, x):
                 B,_,_,_ = x.shape
@@ -242,8 +270,10 @@ def main():
     #     model = SO3EquivariantBracketNoResidualConnectLayers(2).to(device)
         
     print("total number of parameters: ", sum(p.numel() for p in model.parameters()))
+    for name, param in model.named_parameters():
+        print(name, param.shape)
 
-    train(model, train_loader, test_loader, config, device)
+    train(model, train_loader, test_loader,test_loader_1, config, device)
 
 
 if __name__ == "__main__":

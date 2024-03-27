@@ -17,6 +17,7 @@ from torch.utils.tensorboard import SummaryWriter
 
 from core.lie_neurons_layers import *
 from core.lie_alg_util import *
+from core.lie_group_util import exp_so3
 from experiment.euler_poincare_eq_layers import *
 
 import emlp.nn.pytorch as emlpnn
@@ -26,6 +27,8 @@ from emlp.groups import SO
 parser = argparse.ArgumentParser('Euler Poincare Equation Fitting')
 parser.add_argument('--method', type=str, default='dopri5')
 parser.add_argument('--num_training', type=int, default=10)
+parser.add_argument('--num_testing', type=int, default=10)
+parser.add_argument('--num_testing_augmentation', type=int, default=10)
 parser.add_argument('--data_size', type=int, default=1000)
 parser.add_argument('--batch_time', type=int, default=10)
 parser.add_argument('--batch_size', type=int, default=20)
@@ -68,6 +71,21 @@ val_true_y0 = torch.tensor([[2., 1.,3.0]]).to(device)
 t = torch.linspace(0., 25., args.data_size).to(device)
 t_val = torch.linspace(0., 5., int(args.data_size/5)).to(device)
 
+# test data
+torch.manual_seed(81292)
+if args.num_testing > 1:
+    testing_y0 = torch.rand((args.num_testing, 3)).to(device)
+elif args.num_testing == 1:
+    testing_y0 = torch.tensor([[2., 1.,3.0]]).to(device)
+
+vis_y0 = torch.tensor([[2., 1.,3.0]]).to(device)
+
+t_end_list = [5., 10., 15., 20., 25.]
+t_test = []
+for t_end in t_end_list:
+    t_test.append(torch.linspace(0., t_end, int(args.data_size/25.*t_end)).to(device))
+# vis_t = torch.linspace(0., args.viz_time, args.data_size).to(device)
+
 class EulerPoincareEquation(nn.Module):
     
     def __init__(self) -> None:
@@ -100,11 +118,13 @@ class EMLPFunc(nn.Module):
         rep_in = V(G)
         rep_out = V(G)
         self.net = emlpnn.EMLP(rep_in,rep_out,group=G,num_layers=3,ch=128).to(device)
-        
+        self.R = torch.eye(3)
+
     def set_R(self,R):
         self.R = R.to(self.R.device)
 
     def forward(self, t, y):
+        # y = y.squeeze(1)
         return self.net(y)
     
 class EMLPFunc2(nn.Module):
@@ -112,17 +132,21 @@ class EMLPFunc2(nn.Module):
         super(EMLPFunc2, self).__init__()
 
         G = SO(3)
-        rep_in = V(G)+T(G)
+        rep_in = 4*V(G)
         rep_out = V(G)
         self.m = nn.Parameter(torch.randn(1,9))
         self.net = emlpnn.EMLP(rep_in,rep_out,group=G,num_layers=3,ch=128).to(device)
-        
+        self.R = torch.eye(3)
+
     def set_R(self,R):
         self.R = R.to(self.R.device)
 
     def forward(self, t, y):
         B = y.shape[0]
-        y = torch.cat([y,self.m.repeat(B,1)],1)
+        # y = y.unsqueeze(1)
+        # print("y",y.shape)
+        # print("m",self.m.shape)
+        y = torch.cat([y,self.m.unsqueeze(1).repeat(B,1,1)],2)
         return self.net(y)
     
 
@@ -133,6 +157,63 @@ with torch.no_grad():
         training_y.append(true_y)   
 
     val_true_y = odeint(EulerPoincareEquation(), val_true_y0, t_val, method='dopri5')
+
+''' 
+N: number of testing data
+J: number of end time being tested (5)
+M_j: data size for j-th time
+D: dimension (3)
+'''
+with torch.no_grad():
+    testing_y = []
+    # print("testing y0", testing_y0.shape)
+    for j, t_j in enumerate(t_test):
+        # for i in range(args.num_testing):
+        true_y = odeint(EulerPoincareEquation(), testing_y0, t_j, method='dopri5').unsqueeze(-2)    # (M_j, N, 1, D)
+        # print("true_y", true_y.shape)
+        testing_y.append(true_y) # (J, (M_j, N, 1, D))
+
+    # vis_y = odeint(EulerPoincareEquation(), vis_y0, vis_t, method='dopri5')
+
+def test(func):
+    for j, t_j in enumerate(t_test):
+        with torch.no_grad():
+            func.eval()
+            pred_y = odeint(func, testing_y0.unsqueeze(1), t_j).to(device)  # Lie Neuron takes additional feature dimension thus we need to unsqueeze(1)
+            cur_y = testing_y[j]    # 
+            loss = torch.mean(torch.norm(pred_y - cur_y, dim=-1))
+
+            time_meter.update(time.time() - end)
+            print("loss at",t_end_list[j],"sec is", loss.item())
+
+            # generate data for change of reference frame testing
+            hat_so3 = HatLayer(algebra_type='so3')
+            v = torch.rand((args.num_testing_augmentation,3))
+            v = torch.div(v,torch.norm(v,dim=-1).unsqueeze(-1))
+            phi = (math.pi-1e-6)*torch.rand(args.num_testing_augmentation,1)
+            v = phi*v
+            v_hat = hat_so3(v)
+            R = exp_so3(v_hat).to(device)
+
+    for j, t_j in enumerate(t_test):
+        with torch.no_grad():
+            cur_y = testing_y[j]    # (N, M_j, D)
+            loss_meter = RunningAverageMeter(1.00)
+            for k in range(args.num_testing_augmentation):
+                cur_R = R[k,:,:]
+                # print("cur_R",cur_R.shape)
+                # print("cur_y",cur_y.shape)
+                # print("testing_y0",testing_y0.shape)
+                cur_y0 = torch.einsum('ij,kj->ki',cur_R,testing_y0).unsqueeze(1)
+                cur_y_conj = torch.einsum('ij,bksj->bksi',cur_R,cur_y)
+                func.set_R(cur_R)
+                with torch.no_grad():
+                    pred_y = odeint(func, cur_y0, t_j).to(device)
+                    loss = torch.mean(torch.norm(pred_y - cur_y_conj, dim=-1))
+                    loss_meter.update(loss.item())
+
+        print("conjugated loss at",t_end_list[j],"sec is", loss_meter.get_avg())
+
 
 def get_training_batch():
     j = random.randint(0, args.num_training - 1)
@@ -228,6 +309,8 @@ class RunningAverageMeter(object):
             self.avg = self.avg * self.momentum + val * (1 - self.momentum)
         self.val = val
 
+    def get_avg(self):
+        return self.avg
 
 if __name__ == '__main__':
 
@@ -274,6 +357,7 @@ if __name__ == '__main__':
     best_loss = float('inf')
 
     for itr in range(1, args.niters + 1):
+        func.train()
         optimizer.zero_grad()
         batch_y0, batch_t, batch_y = get_training_batch()
         # print("here")
@@ -331,6 +415,9 @@ if __name__ == '__main__':
 
                 torch.save(state,  args.model_save_path +
                         '_best_val_loss_acc.pt')
+
+                test(func)
+                
             print("------------------------------")
 
         if itr % args.save_freq == 0:

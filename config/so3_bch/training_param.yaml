@@ -26,11 +26,11 @@ print_freq: 100
 # log_writer_path: "/home/justin/code/LieNeurons/logs/0928_equiv_one_bracket_no_residual"
 
 model_type: "EMLP"
-model_save_path: "/home/justin/code/LieNeurons/weights/0326_BCH_EMLP_1024"
-log_writer_path: "/home/justin/code/LieNeurons/logs/0326_BCH_EMLP_1024"
+model_save_path: "/home/justin/code/LieNeurons/weights/0326_BCH_EMLP_512_test"
+log_writer_path: "/home/justin/code/LieNeurons/logs/0326_BCH_EMLP_512_test"
 
-resume_training: false
-resume_model_path: "/home/justin/code/LieNeurons/weights/0921_sl3_equiv_first_try.pth.tar"
+resume_training: True
+resume_model_path: "/home/justin/code/LieNeurons/weights/0326_BCH_EMLP_512_test_best_test_loss_acc.pt"
 
 num_workers: 1
 batch_size: 100

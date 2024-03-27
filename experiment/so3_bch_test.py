@@ -92,9 +92,13 @@ def test_bch(model, test_loader, config, device):
             # print(f"{R1=}")
             # print(f"{R2=}")
             # print(f"{hat_layer(output_x)=}")
+            # print(f"{residual_R=}")
+            # print(residual_R - torch.eye(3).to(device))
             residual_log = log_SO3(residual_R)
             error_log = torch.linalg.vector_norm(vee(residual_log, algebra_type='so3'), dim=1)
             error_fro = torch.linalg.matrix_norm(residual_R - torch.eye(3).to(device))
+            # print(f"{error_fro=}")
+            # error_fro = torch.norm(residual_R - torch.eye(3).to(device), p='fro')
             error_fro_sum += error_fro.sum().item()
             error_log_sum += error_log.sum().item()
             total_num += x.shape[0]
@@ -293,10 +297,17 @@ def main():
 
     print("Using model: ", config['model_type'])
     print("total number of parameters: ", sum(p.numel() for p in model.parameters()))
+    
+    # for name, param in model.named_parameters():
+    #     print(name, param.shape)
 
+    # print("model weight before load ", model.model.network[0].weight)
     # model = SL3InvariantLayersTest(2).to(device)
     checkpoint = torch.load(config['model_path'])
+    print(checkpoint['test loss'])
     model.load_state_dict(checkpoint['model_state_dict'],strict=False)
+    
+    # print("model weight after load ", model.model.network[0].weight)
 
     # criterion = nn.MSELoss().to(device)
     error_fro_avg, error_log_avg, error_fro_conj_avg, error_log_conj_avg, diff_output_avg = test_bch(model, test_loader, config, device)
