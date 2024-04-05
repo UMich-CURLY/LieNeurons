@@ -288,6 +288,14 @@ def main():
                 return self.model(x)
             
         model = EMLPModel().to(device)
+    elif config['model_type'] == "e3nn_norm":
+        import e3nn
+        from experiment.so3_bch_baseline_layers import E3nnMLPNorm
+        model = E3nnMLPNorm(invariant=False).to(device)
+    elif config['model_type'] == "e3nn_s2grid":
+        import e3nn
+        from experiment.so3_bch_baseline_layers import E3nnMLPS2Grid
+        model = E3nnMLPS2Grid(invariant=False).to(device)
     elif config['model_type'] == "VN_relu":
         model = SO3EquivariantVNReluLayers(2).to(device)
 

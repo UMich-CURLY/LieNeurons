@@ -257,7 +257,7 @@ def main():
         class EMLPModel(nn.Module):
             def __init__(self):
                 super(EMLPModel, self).__init__()
-                self.model = emlpnn.EMLP(reps, reps_out, group=G, num_layers=3,ch=10)
+                self.model = emlpnn.EMLP(reps, reps_out, group=G, num_layers=3,ch=128)
 
             def forward(self, x):
                 B,_,_,_ = x.shape
@@ -266,6 +266,15 @@ def main():
             
         model = EMLPModel().to(device)
 
+    elif config['model_type'] == "e3nn_norm":
+        import e3nn
+        from experiment.so3_bch_baseline_layers import E3nnMLPNorm
+        model = E3nnMLPNorm(invariant=False).to(device)
+    elif config['model_type'] == "e3nn_s2grid":
+        import e3nn
+        from experiment.so3_bch_baseline_layers import E3nnMLPS2Grid
+        model = E3nnMLPS2Grid(invariant=False).to(device)
+        
     elif config['model_type'] == "VN_relu":
         model = SO3EquivariantVNReluLayers(2).to(device)
     # elif config['model_type'] == "LN_bracket_no_residual":
