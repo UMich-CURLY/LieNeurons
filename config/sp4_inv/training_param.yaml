@@ -1,0 +1,45 @@
+train_data_path: "/home/justin/code/LieNeurons/data/sp4_inv_data/sp4_inv_10000_s_05_augmented_train_data.npz"
+test_data_path: "/home/justin/code/LieNeurons/data/sp4_inv_data/sp4_inv_10000_s_05_test_data.npz"
+
+# logger
+model_description: "SP4InvariantFunctionFitting"
+print_freq: 100
+
+# model_type: "MLP"
+# model_save_path: "/home/justin/code/LieNeurons/weights/rebuttal_inv_mlp_augmented_5"
+# log_writer_path: "/home/justin/code/LieNeurons/logs/rebuttal_inv_mlp_augmented_5"
+
+# model_type: "LN_relu_bracket"
+# model_save_path: "/home/justin/code/LieNeurons/weights/0404_sp4_inv_relu_bracket"
+# log_writer_path: "/home/justin/code/LieNeurons/logs/0404_sp4_inv_relu_bracket"
+
+# model_type: "LN_relu"
+# model_save_path: "/home/justin/code/LieNeurons/weights/1120_one_relu_test"
+# log_writer_path: "/home/justin/code/LieNeurons/logs/1120_one_relu_test"
+
+# model_type: "LN_bracket"
+# model_save_path: "/home/justin/code/LieNeurons/weights/1120_one_bracket_3"
+# log_writer_path: "/home/justin/code/LieNeurons/logs/1120_one_bracket_3"
+
+# model_type: "MLP"
+# model_save_path: "/home/justin/code/LieNeurons/weights/0404_sp4_inv_MLP_augmented"
+# log_writer_path: "/home/justin/code/LieNeurons/logs/0404_sp4_inv_MLP_augmented"
+
+model_type: "MLP512"
+model_save_path: "/home/justin/code/LieNeurons/weights/0404_sp4_inv_MLP_512_augmented"
+log_writer_path: "/home/justin/code/LieNeurons/logs/0404_sp4_inv_MLP_512_augmented"
+
+# model_type: "LN_bracket_no_residual"
+# model_save_path: "/home/justin/code/LieNeurons/weights/1120_one_bracket_no_residual"
+# log_writer_path: "/home/justin/code/LieNeurons/logs/1120_one_bracket_no_residual"
+resume_training: false
+resume_model_path: "/home/justin/code/LieNeurons/weights/0921_sl3_inv_first_try.pth.tar"
+num_workers: 1
+batch_size: 100
+update_every_batch: 1
+# initial_learning_rate: 0.00003
+initial_learning_rate: 0.0001
+learning_rate_decay_rate: 0.0
+weight_decay_rate: 0.00
+num_epochs: 600
+shuffle: True

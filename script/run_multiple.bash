@@ -1,6 +1,6 @@
 proj_dir="/home/justin/code/LieNeurons/"
 config_path="config/"
-num_experiment=5
+num_experiment=4
 GREEN='\033[0;32m'
 ORANGE='\033[0;33m'
 NC='\033[0m' # No Color
@@ -126,19 +126,33 @@ export proj_dir
 
 # equivariant task
 # mlp augmented
-for iter in $(seq 1 $num_experiment); do
-  echo -e "--------------------%% Running equivariant task: mlp augmented $iter %%--------------------"
-  export iter
-  yq e -i '.train_data_path =  "/home/justin/code/LieNeurons/data/sl3_equiv_lie_bracket_data/sl3_equiv_10000_lie_bracket_2inputs_augmented_train_data.npz"' $config_path"sl3_equiv/training_param.yaml"
-  yq e -i '.model_save_path = strenv(proj_dir)+"weights/rebuttal_equiv_mlp_augmented_"+env(iter)'  $config_path"sl3_equiv/training_param.yaml"
-  yq e -i '.log_writer_path = strenv(proj_dir)+"logs/rebuttal_equiv_mlp_augmented_"+env(iter)'  $config_path"sl3_equiv/training_param.yaml"
-  yq e -i '.model_type = "MLP"'  $config_path"sl3_equiv/training_param.yaml"
-  yq e -i '.initial_learning_rate = 0.00001'  $config_path"sl3_equiv/training_param.yaml"
-  python experiment/sl3_equiv_train.py
-done
+# for iter in $(seq 1 $num_experiment); do
+#   echo -e "--------------------%% Running equivariant task: mlp augmented $iter %%--------------------"
+#   export iter
+#   yq e -i '.train_data_path =  "/home/justin/code/LieNeurons/data/sl3_equiv_lie_bracket_data/sl3_equiv_10000_lie_bracket_2inputs_augmented_train_data.npz"' $config_path"sl3_equiv/training_param.yaml"
+#   yq e -i '.model_save_path = strenv(proj_dir)+"weights/rebuttal_equiv_mlp_augmented_"+env(iter)'  $config_path"sl3_equiv/training_param.yaml"
+#   yq e -i '.log_writer_path = strenv(proj_dir)+"logs/rebuttal_equiv_mlp_augmented_"+env(iter)'  $config_path"sl3_equiv/training_param.yaml"
+#   yq e -i '.model_type = "MLP"'  $config_path"sl3_equiv/training_param.yaml"
+#   yq e -i '.initial_learning_rate = 0.00001'  $config_path"sl3_equiv/training_param.yaml"
+#   python experiment/sl3_equiv_train.py
+# done
 
 # ============================================================================================================================================================================================
 # classification task
+
+# mlp aug
+for iter in $(seq 1 $num_experiment); do
+  echo -e "--------------------%% Running classification task: mlp augmentation $iter %%--------------------"
+  export iter
+  yq e -i '.model_save_path = strenv(proj_dir)+"weights/rebuttal_cls_mlp_aug_"+env(iter)'  $config_path"platonic_solid_cls/training_param.yaml"
+  yq e -i '.log_writer_path = strenv(proj_dir)+"logs/rebuttal_cls_mlp_aug_"+env(iter)'  $config_path"platonic_solid_cls/training_param.yaml"
+  yq e -i '.model_type = "MLP"'  $config_path"platonic_solid_cls/training_param.yaml"
+  yq e -i '.initial_learning_rate = 0.0001'  $config_path"platonic_solid_cls/training_param.yaml"
+  yq e -i '.train_augmentation = True'  $config_path"platonic_solid_cls/training_param.yaml"
+  python experiment/platonic_solid_cls_train.py
+done
+
+
 # mlp
 # for iter in $(seq 1 $num_experiment); do
 #   echo -e "--------------------%% Running classification task: mlp $iter %%--------------------"

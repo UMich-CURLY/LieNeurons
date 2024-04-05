@@ -103,7 +103,7 @@ def train(model, train_loader, test_loader,test_loader_1, config, device='cpu'):
         print("loss: ",checkpoint['loss'])
         print("test loss: ", checkpoint['test loss'])
         # print(model.model.network[0].linear.weight)
-        print(model.model.network[0].bilinear.bi_params)
+        # print(model.model.network[0].bilinear.bi_params)
     else:
         start_epoch = 0
 
@@ -177,20 +177,22 @@ def train(model, train_loader, test_loader,test_loader_1, config, device='cpu'):
             
             # print(model.model.network[0].linear.weight)
             
-            print(model.model.network[0].bilinear.bi_params)
+            # print(model.model.network[0].bilinear.bi_params)
+
 
             # Temporary testing because we're unable to save emlp model correctly
-            test_config = yaml.safe_load(open(os.path.dirname(os.path.abspath(__file__))+'/../config/so3_bch/testing_param.yaml'))
-            error_fro_avg, error_log_avg, error_fro_conj_avg, error_log_conj_avg, diff_output_avg = test_bch(model, test_loader_1, test_config, device)
-            print("error fro avg: ", error_fro_avg)
-            print("error log avg: ", error_log_avg)
-            print("error fro conj avg: ", error_fro_conj_avg)
-            print("error log conj avg: ", error_log_conj_avg)
-
+            if config['full_eval_during_training']:
+                test_config = yaml.safe_load(open(os.path.dirname(os.path.abspath(__file__))+'/../config/so3_bch/testing_param.yaml'))
+                error_fro_avg, error_log_avg, error_fro_conj_avg, error_log_conj_avg, diff_output_avg = test_bch(model, test_loader_1, test_config, device)
+                print("error fro avg: ", error_fro_avg)
+                print("error log avg: ", error_log_avg)
+                print("error fro conj avg: ", error_fro_conj_avg)
+                print("error log conj avg: ", error_log_conj_avg)
+                print("avg diff output: ", diff_output_avg)
         # print("test_loss type:",type(test_loss_equiv))
         # # print("avg diff output type: ", diff_output_avg.dtype)
         # print("test with augmentation loss: ", test_loss_equiv)
-        print("avg diff output: ", diff_output_avg)
+        
 
         print("------------------------------")
         # print("Finished epoch %d / %d, training top 1 acc: %.4f, training top 5 acc: %.4f, \
@@ -270,8 +272,8 @@ def main():
     #     model = SO3EquivariantBracketNoResidualConnectLayers(2).to(device)
         
     print("total number of parameters: ", sum(p.numel() for p in model.parameters()))
-    for name, param in model.named_parameters():
-        print(name, param.shape)
+    # for name, param in model.named_parameters():
+    #     print(name, param.shape)
 
     train(model, train_loader, test_loader,test_loader_1, config, device)
 

@@ -1,0 +1,31 @@
+test_data_path: "/home/justin/code/LieNeurons/data/sp4_inv_data/sp4_inv_10000_s_05_test_data.npz"
+# logger
+model_description: "SP4InvariantFunctionFitting"
+print_freq: 100
+# model_type: "LN"
+# model_path: "/home/justin/code/LieNeurons/weights/0928_sl3_inv_LN_256_no_share_nonlin_train_10000_lr_0.000003_new_best_test_loss_acc.pt"
+# model_type: "MLP"
+# model_path: "/home/justin/code/LieNeurons/weights/rebuttal_inv_mlp_augmented_5_best_test_loss_acc.pt"
+# model_type: "MLP"
+# model_path: "/home/justin/code/LieNeurons/weights/rebuttal_inv_mlp_augmented_5_best_test_loss_acc.pt"
+
+# model_type: "LN_bracket"
+# model_path: "/home/justin/code/LieNeurons/weights/0928_one_bracket_0.00003_best_test_loss_acc.pt"
+
+model_type: "LN_relu_bracket"
+model_path: "/home/justin/code/LieNeurons/weights/0404_sp4_inv_relu_bracket_best_test_loss_acc.pt"
+
+# model_type: "LN_bracket"
+# model_path: "/home/justin/code/LieNeurons/weights/1120_one_bracket_2_best_test_loss_acc.pt"
+
+# model_type: "MLP512"
+# model_path: "/home/justin/code/LieNeurons/weights/0404_sp4_inv_MLP_512_augmented_best_test_loss_acc.pt"
+
+# model_type: "MLP512"
+# model_path: "/home/justin/code/LieNeurons/weights/0404_sp4_inv_MLP_512_best_test_loss_acc.pt"
+
+# model_type: "LN_bracket_no_residual"
+# model_path: "/home/justin/code/LieNeurons/weights/0928_one_bracket_no_residual_best_test_loss_acc.pt"
+num_workers: 1
+batch_size: 100
+shuffle: True

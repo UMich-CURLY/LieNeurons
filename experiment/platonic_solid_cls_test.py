@@ -24,7 +24,7 @@ from data_gen.gen_platonic_solids import *
 
 def test_perspective(model, test_loader, criterion, config, device):
     model.eval()
-    hat_layer = HatLayerSl3().to(device)
+    hat_layer = HatLayer(algebra_type='sl3').to(device)
     rots = random_sample_rotations(config['num_rotations'], config['rotation_factor'],device)
     with torch.no_grad():
         loss_sum = 0.0

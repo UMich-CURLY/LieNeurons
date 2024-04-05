@@ -5,10 +5,11 @@ print_freq: 100
 # model_type: "LN"
 # model_path: "/home/justin/code/LieNeurons/weights/0926_platonic_cls_LN_best_test_loss_good.pt"
 
-# model_type: "MLP"
-# model_path: "/home/justin/code/LieNeurons/weights/0926_platonic_cls_MLP_best_test_loss_good.pt"
-model_type: "LN_relu_bracket"
-model_path: "/home/justin/code/LieNeurons/weights/rebuttal_cls_rb_5_best_test_acc.pt"
+model_type: "MLP"
+model_path: "/home/justin/code/LieNeurons/weights/rebuttal_cls_mlp_aug_4_best_test_acc.pt"
+# model_type: "LN_relu_bracket"
+# model_path: "/home/justin/code/LieNeurons/weights/rebuttal_cls_rb_5_best_test_acc.pt"
+
 # model_type: "LN_relu"
 # model_path: "/home/justin/code/LieNeurons/weights/0928_cls_one_relu_best_test_acc.pt"
 

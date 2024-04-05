@@ -12,11 +12,11 @@ from core.lie_group_util import *
 if __name__ == "__main__":
 
     data_saved_path = "data/so3_bch_data/"
-    data_name = "so3_bch_10000_4"
+    data_name = "so3_bch_10000_augmented"
     gen_augmented_training_data = False
 
-    num_training = 10000
-    num_testing = 10000
+    num_training = 5000
+    num_testing = 5000
     num_conjugate = 1
 
     train_data = {}
@@ -59,7 +59,7 @@ if __name__ == "__main__":
 
         # v3 = vee(BCH_approx(K1[0,:,:], K2[0,:,:]), algebra_type='so3')
         if(torch.norm(v3) > math.pi):
-            print("----------out put bigger than pi---------")
+            print("----------output bigger than pi---------")
             print("norm v1", torch.norm(v1))
             print("norm v2", torch.norm(v2))
             print("norm v3", torch.norm(v3))

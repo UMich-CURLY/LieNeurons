@@ -9,6 +9,7 @@ import numpy as np
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 import time
+from scipy.spatial.transform import Rotation
 
 import torch
 from torch import nn
@@ -34,6 +35,13 @@ def init_writer(config):
 
     return writer
 
+def random_sample_rotations(num_rotation, rotation_factor: float = 1.0, device='cpu') -> np.ndarray:
+    r = np.zeros((num_rotation, 3, 3))
+    for n in range(num_rotation):
+        # angle_z, angle_y, angle_x
+        euler = np.random.rand(3) * np.pi * 2 / rotation_factor  # (0, 2 * pi / rotation_range)
+        r[n,:,:] = Rotation.from_euler('zyx', euler).as_matrix()
+    return torch.from_numpy(r).type('torch.FloatTensor').to(device)
 
 def test(model, test_loader, criterion, config, device):
     model.eval()
@@ -83,6 +91,8 @@ def train(model, train_loader, test_loader, config, device='cpu'):
     best_acc = 0.0
     running_loss = 0.0
     loss_sum = 0.0
+    hat_layer = HatLayer(algebra_type='sl3').to(device)
+
     for iter, samples in tqdm(enumerate(train_loader, start=0)):
         
         model.train()
@@ -90,6 +100,11 @@ def train(model, train_loader, test_loader, config, device='cpu'):
 
         x = samples[0].to(device)
         cls = samples[1].to(device)
+        if config['train_augmentation']:
+            rot = random_sample_rotations(1, config['rotation_factor'],device)
+            x_hat = hat_layer(x)
+            x_rot_hat = torch.matmul(rot, torch.matmul(x_hat, torch.inverse(rot)))
+            x = vee_sl3(x_rot_hat)
 
         x = rearrange(x,'b n f k -> b f k n')
 

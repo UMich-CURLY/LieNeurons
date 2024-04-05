@@ -87,6 +87,62 @@ class HatLayer(torch.nn.Module):
                 [E1,E2,E3,E4,E5,E6], dim=0)  # [6,3,3]
             self.register_buffer('E_bases', E_bases)
 
+        elif algebra_type == 'sp4':
+            E1 = torch.tensor([[1, 0, 0, 0], 
+                   [0, 0, 0, 0],
+                   [0, 0, -1, 0],
+                   [0, 0, 0, 0]])
+
+            E2 = torch.tensor([[0, 1, 0, 0],
+                            [0, 0, 0, 0], 
+                            [0, 0, 0, 0],
+                            [0, 0, -1, 0]])
+
+            E3 = torch.tensor([[0, 0, 0, 0],
+                            [1, 0, 0, 0],
+                            [0, 0, 0, -1],
+                            [0, 0, 0, 0]])
+
+            E4 = torch.tensor([[0, 0, 0, 0],
+                            [0, 1, 0, 0],
+                            [0, 0, 0, 0],
+                            [0, 0, 0, -1]])
+
+            E5 = torch.tensor([[0, 0, 0, 0],
+                            [0, 0, 0, 0],
+                            [1, 0, 0, 0],
+                            [0, 0, 0, 0]])
+
+            E6 = torch.tensor([[0, 0, 0, 0],
+                            [0, 0, 0, 0],
+                            [0, 1, 0, 0],
+                            [1, 0, 0, 0]])
+
+            E7 = torch.tensor([[0, 0, 0, 0],
+                            [0, 0, 0, 0],
+                            [0, 0, 0, 0],
+                            [0, 1, 0, 0]])
+
+            E8 = torch.tensor([[0, 0, 1, 0],
+                            [0, 0, 0, 0],
+                            [0, 0, 0, 0],
+                            [0, 0, 0, 0]])
+
+            E9 = torch.tensor([[0, 0, 0, 1],
+                            [0, 0, 1, 0],
+                            [0, 0, 0, 0],
+                            [0, 0, 0, 0]])
+
+            E10 = torch.tensor([[0, 0, 0, 0],
+                                [0, 0, 0, 1],
+                                [0, 0, 0, 0],
+                                [0, 0, 0, 0]])
+            E_bases = torch.stack(
+                [E1,E2,E3,E4,E5,E6,E7,E8,E9,E10], dim=0)  # [10,3,3]
+            self.register_buffer('E_bases', E_bases)
+        else:
+            raise ValueError('Invalid algebra type for the hat operation')
+
     def forward(self, v):
         """
         v: a tensor of arbitrary shape with the last dimension of size k
@@ -100,6 +156,10 @@ def vee(M, algebra_type='sl3'):
         return vee_sl3(M)
     elif algebra_type == 'se3':
         return vee_se3(M)
+    elif algebra_type == 'sp4':
+        return vee_sp4(M)
+    else:
+        raise ValueError('Invalid algebra type for the vee operation')
 
 def vee_so3(M):
     # [0 , -z, y ]
@@ -142,11 +202,30 @@ def vee_se3(M):
     v[..., 5] = M[..., 1, 0]
     return v
 
+def vee_sp4(M):
+    v = torch.zeros(M.shape[:-2]+(10,)).to(M.device)
+
+    v[..., 0] = M[..., 0, 0]
+    v[..., 1] = M[..., 0, 1]
+    v[..., 2] = M[..., 1, 0]
+    v[..., 3] = M[..., 1, 1]
+    v[..., 4] = M[..., 2, 0]
+    v[..., 5] = M[..., 2, 1]
+    v[..., 6] = M[..., 3, 1]
+    v[..., 7] = M[..., 0, 2]
+    v[..., 8] = M[..., 1, 2]
+    v[..., 9] = M[..., 1, 3]
+    return v
+
 def killingform(x_hat, d_hat, algebra_type='sl3', feature_wise=False):
     if algebra_type == 'so3':
         return killingform_so3(x_hat, d_hat, feature_wise)
     elif algebra_type == 'sl3':
         return killingform_sl3(x_hat, d_hat, feature_wise)
+    elif algebra_type == 'sp4':
+        return killingform_sp4(x_hat, d_hat, feature_wise)
+    else:
+        raise ValueError('Invalid algebra type for the Killing form')
     
 def killingform_so3(x_hat, d_hat, feature_wise=False):
     """
@@ -175,6 +254,16 @@ def killingform_sl3(x_hat, d_hat, feature_wise=False):
         kf = rearrange(kf, 'b f d n -> b (f d) n 1')
         
         return kf
+def killingform_sp4(x_hat, d_hat, feature_wise=False):
+    """
+    x: a tensor of arbitrary shape with the last two dimension of size 4*4
+    d: a tensor of arbitrary shape with the last two dimension of size 4*4
+    killing form for sp4 is 6tr(x_hat@d_hat)
+    """
+    if not feature_wise:
+        return 6*(x_hat.transpose(-1, -2)*d_hat).sum(dim=(-1, -2))[..., None]   # [B,F,N,1]
+    else:
+        return 6*(x_hat.transpose(-1, -2)*d_hat).sum(dim=(-1, -2))[..., None]   # [B,F,N,1]
 
 def lie_bracket(x, y):
     return x@y - y@x

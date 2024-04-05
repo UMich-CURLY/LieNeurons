@@ -136,7 +136,7 @@ class EMLPFunc2(nn.Module):
         rep_out = V(G)
         self.m = nn.Parameter(torch.randn(1,9))
         self.net = emlpnn.EMLP(rep_in,rep_out,group=G,num_layers=3,ch=128).to(device)
-        self.R = torch.eye(3)
+        self.R = torch.eye(3).to(device)
 
     def set_R(self,R):
         self.R = R.to(self.R.device)
@@ -146,7 +146,10 @@ class EMLPFunc2(nn.Module):
         # y = y.unsqueeze(1)
         # print("y",y.shape)
         # print("m",self.m.shape)
-        y = torch.cat([y,self.m.unsqueeze(1).repeat(B,1,1)],2)
+        m1 = self.m.reshape(3,3)
+        m1 = self.R @ m1
+        m1 = m1.reshape(1,9) 
+        y = torch.cat([y,m1.unsqueeze(1).repeat(B,1,1)],2)
         return self.net(y)
     
 
@@ -417,6 +420,7 @@ if __name__ == '__main__':
                         '_best_val_loss_acc.pt')
 
                 test(func)
+                func.set_R(torch.eye(3))
                 
             print("------------------------------")
 
