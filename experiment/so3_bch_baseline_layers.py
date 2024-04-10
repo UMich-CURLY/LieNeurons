@@ -15,23 +15,23 @@ class E3nnMLPBlockNorm(torch.nn.Module):
         x = self.act(x)
         return x
 
-class E3nnMLPBlockS2Grid(torch.nn.Module):
-    def __init__(self, rep_input, l_max, l_max_in=None, grid_size=100) -> None:
-        super().__init__()
+# class E3nnMLPBlockS2Grid(torch.nn.Module):
+#     def __init__(self, rep_input, l_max, l_max_in=None, grid_size=100) -> None:
+#         super().__init__()
 
-        rep_output = e3nn.io.SphericalTensor(l_max, 1, 1)
-        if rep_input is None:
-            rep_input = e3nn.io.SphericalTensor(l_max_in, 1, 1)
+#         rep_output = e3nn.io.SphericalTensor(l_max, 1, 1)
+#         if rep_input is None:
+#             rep_input = e3nn.io.SphericalTensor(l_max_in, 1, 1)
 
-        self.linear = e3nn.o3.Linear(rep_input, rep_output)
-        self.batchnorm = e3nn.nn.BatchNorm(rep_output)
-        self.act = e3nn.nn.S2Activation(rep_output, torch.sigmoid, grid_size)
+#         self.linear = e3nn.o3.Linear(rep_input, rep_output)
+#         self.batchnorm = e3nn.nn.BatchNorm(rep_output)
+#         self.act = e3nn.nn.S2Activation(rep_output, torch.sigmoid, grid_size)
 
-    def forward(self, x):
-        x = self.linear(x)
-        x = self.batchnorm(x)
-        x = self.act(x)
-        return x
+#     def forward(self, x):
+#         x = self.linear(x)
+#         x = self.batchnorm(x)
+#         x = self.act(x)
+#         return x
     
 class E3nnMLPBlockGate(torch.nn.Module):
     def __init__(self, rep_input, irreps_scalars, act_scalars, irreps_gates, act_gates, irreps_gated) -> None:
@@ -81,37 +81,37 @@ class E3nnMLPNorm(torch.nn.Module):
         x = self.out(x)
         return x
 
-class E3nnMLPS2Grid(torch.nn.Module):
-    def __init__(self, invariant=False):
-        super().__init__()
+# class E3nnMLPS2Grid(torch.nn.Module):
+#     def __init__(self, invariant=False):
+#         super().__init__()
 
-        rep_input = "2x1e"
-        rep_hidden_lmax = 20 # arbitrary lmax
-        rep_hidden = e3nn.io.SphericalTensor(rep_hidden_lmax, 1, 1)
-        if invariant:
-            rep_output = "1x0e"
-        else:
-            rep_output = "1x1e"
+#         rep_input = "2x1e"
+#         rep_hidden_lmax = 20 # arbitrary lmax
+#         rep_hidden = e3nn.io.SphericalTensor(rep_hidden_lmax, 1, 1)
+#         if invariant:
+#             rep_output = "1x0e"
+#         else:
+#             rep_output = "1x1e"
 
-        self.block1 = E3nnMLPBlockS2Grid(rep_input, rep_hidden_lmax)
-        self.block2 = E3nnMLPBlockS2Grid(None, rep_hidden_lmax, rep_hidden_lmax)
-        self.block3 = E3nnMLPBlockS2Grid(None, rep_hidden_lmax, rep_hidden_lmax)
-        self.block4 = E3nnMLPBlockS2Grid(None, rep_hidden_lmax, rep_hidden_lmax)
-        self.block5 = E3nnMLPBlockS2Grid(None, rep_hidden_lmax, rep_hidden_lmax)
-        self.block6 = E3nnMLPBlockS2Grid(None, rep_hidden_lmax, rep_hidden_lmax)
-        self.out = e3nn.o3.Linear(rep_hidden, rep_output)
+#         self.block1 = E3nnMLPBlockS2Grid(rep_input, rep_hidden_lmax)
+#         self.block2 = E3nnMLPBlockS2Grid(None, rep_hidden_lmax, rep_hidden_lmax)
+#         self.block3 = E3nnMLPBlockS2Grid(None, rep_hidden_lmax, rep_hidden_lmax)
+#         self.block4 = E3nnMLPBlockS2Grid(None, rep_hidden_lmax, rep_hidden_lmax)
+#         self.block5 = E3nnMLPBlockS2Grid(None, rep_hidden_lmax, rep_hidden_lmax)
+#         self.block6 = E3nnMLPBlockS2Grid(None, rep_hidden_lmax, rep_hidden_lmax)
+#         self.out = e3nn.o3.Linear(rep_hidden, rep_output)
 
-    def forward(self, x):
-        B, F, _, _ = x.shape
-        x = torch.reshape(x, (B, -1))
-        x = self.block1(x)
-        x = self.block2(x)
-        x = self.block3(x)
-        x = self.block4(x)
-        x = self.block5(x)
-        x = self.block6(x)
-        x = self.out(x)
-        return x
+#     def forward(self, x):
+#         B, F, _, _ = x.shape
+#         x = torch.reshape(x, (B, -1))
+#         x = self.block1(x)
+#         x = self.block2(x)
+#         x = self.block3(x)
+#         x = self.block4(x)
+#         x = self.block5(x)
+#         x = self.block6(x)
+#         x = self.out(x)
+#         return x
     
 class E3nnMLPGate(torch.nn.Module):
     def __init__(self, invariant=False):
@@ -171,6 +171,58 @@ class EquivariantMLPDraft(torch.nn.Module):
         x = self.out(x)
         return x
     
+
+class E3nnMLPBlockS2Grid(torch.nn.Module):
+    def __init__(self, rep_input, l_max, l_max_in=None, multiplicity=3, grid_size=100) -> None:
+        super().__init__()
+        # rep_output = (e3nn.io.SphericalTensor(l_max, 1, 1) * multiplicity).simplify()
+        # if rep_input is None:
+        #     rep_input = (e3nn.io.SphericalTensor(l_max_in, 1, 1) * multiplicity).simplify()
+        rep_output = "128x0e+128x1e+128x2e+128x3e+128x4e+128x5e" #e3nn.io.SphericalTensor(l_max, 1, 1)
+        if rep_input is None:
+            # rep_input = e3nn.io.SphericalTensor(l_max_in, 1, 1)
+            rep_input = "128x0e+128x1e+128x2e+128x3e+128x4e+128x5e"
+        rep_output_hidden = "1x0e+1x1e+1x2e+1x3e+1x4e+1x5e"
+        self.linear = e3nn.o3.Linear(rep_input, rep_output)
+        self.batchnorm = e3nn.nn.BatchNorm(rep_output)
+        self.linear2 = e3nn.o3.Linear(rep_output, rep_output_hidden)
+        self.act = e3nn.nn.S2Activation(rep_output_hidden, torch.sigmoid, grid_size)
+        self.linear3 = e3nn.o3.Linear(rep_output_hidden, rep_output)
+    def forward(self, x):
+        x = self.linear(x)
+        x = self.batchnorm(x)
+        x = self.linear2(x)
+        x = self.act(x)
+        x = self.linear3(x)
+        return x
+
+class E3nnMLPS2Grid(torch.nn.Module):
+    def __init__(self, invariant=False):
+        super().__init__()
+        rep_input = "2x1e"
+        rep_hidden_lmax = 5 # arbitrary lmax
+        # rep_hidden = e3nn.io.SphericalTensor(rep_hidden_lmax, 1, 1)
+        rep_hidden = "128x0e+128x1e+128x2e+128x3e+128x4e+128x5e"
+        if invariant:
+            rep_output = "1x0e"
+        else:
+            rep_output = "1x1e"
+        self.block1 = E3nnMLPBlockS2Grid(rep_input, rep_hidden_lmax)
+        self.block2 = E3nnMLPBlockS2Grid(None, rep_hidden_lmax, rep_hidden_lmax)
+        self.block3 = E3nnMLPBlockS2Grid(None, rep_hidden_lmax, rep_hidden_lmax)
+        self.block4 = E3nnMLPBlockS2Grid(None, rep_hidden_lmax, rep_hidden_lmax)
+        self.out = e3nn.o3.Linear(rep_hidden, rep_output)
+    def forward(self, x):
+        B, F, _, _ = x.shape
+        x = torch.reshape(x, (B, -1))
+        x = self.block1(x)
+        x = self.block2(x)
+        x = self.block3(x)
+        x = self.block4(x)
+        x = self.out(x)
+        return x
+
+
 if __name__ == "__main__":
     # network = EquivariantMLPDraft()
 
