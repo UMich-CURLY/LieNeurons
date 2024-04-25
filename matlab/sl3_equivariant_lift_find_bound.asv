@@ -64,7 +64,6 @@ f(h1,h2,h3,h4,h5,h6,h7,h8,h9) = Ad_H_sym;
 num_K = 1000;
 rnd_scale_K = 100;
 rnd = rnd_scale_K*rand(num_K,3);
-tol = 1e-6;
 K_results = zeros(num_K,4);
 K_color = zeros(num_K,3);
 K_norm = zeros(num_K,1);
@@ -76,7 +75,7 @@ for i=1:num_K
     K_results(i,1) = rnd(i,1);
     K_results(i,2) = rnd(i,2);
     K_results(i,3) = rnd(i,3);
-    K_results(i,4) = rank(D,tol);
+    K_results(i,4) = rank(D);
     K_norm(i,1) = norm(K_results(i,1:3));
     if K_results(i,4)<24
         K_results(i,5) = 0;
@@ -102,8 +101,8 @@ scatter(K_norm,K_results(:,5),S,K_color,'filled');
 idx = K_results(:,5) == 1;
 no_sol_K = K_results(idx,:);
 no_sol_norm = K_norm(idx,:);
-no_sol_norm_mod_pi = mod(no_sol_norm,pi);
-histogram(no_sol_norm_mod_pi,314);
+
+
 
 %% A
 num_A = 100;
