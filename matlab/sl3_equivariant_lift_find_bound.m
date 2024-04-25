@@ -1,6 +1,19 @@
 clc;
 clear; 
 
+compute_K = false;
+num_K = 1000;
+rnd_scale_K = 100;
+
+compute_A = false;
+num_A = 1000;
+rnd_scale_A = 100;
+
+
+compute_N = true;
+num_N = 1000;
+rnd_scale_N = 100;
+
 syms v1 v2 v3 v4 v5 v6 v7 v8
 assumeAlso([v1 v2 v3 v4 v5 v6 v7 v8],'real')
 
@@ -61,51 +74,140 @@ syms f(h1,h2,h3,h4,h5,h6,h7,h8,h9);
 f(h1,h2,h3,h4,h5,h6,h7,h8,h9) = Ad_H_sym;
 
 %% K
-num_K = 1000;
-rnd_scale_K = 100;
-rnd = rnd_scale_K*rand(num_K,3);
-tol = 1e-6;
-K_results = zeros(num_K,4);
-K_color = zeros(num_K,3);
-K_norm = zeros(num_K,1);
-for i=1:num_K
-    H = expm(hat_so3(rnd(i,:)));
-    Ad_test = double(f(H(1,1),H(1,2),H(1,3),H(2,1),H(2,2),H(2,3),H(3,1),H(3,2),H(3,3)));
-    D = kron(inv(H'),Ad_test)-eye(24);
-    
-    K_results(i,1) = rnd(i,1);
-    K_results(i,2) = rnd(i,2);
-    K_results(i,3) = rnd(i,3);
-    K_results(i,4) = rank(D,tol);
-    K_norm(i,1) = norm(K_results(i,1:3));
-    if K_results(i,4)<24
-        K_results(i,5) = 0;
-        K_color(i,:) = [0, 0.4470, 0.7410];
-    elseif K_results(i,4) == 24
-%         H
-        K_results(i,5) = 1;
-        K_color(i,:) = [0.8500, 0.3250, 0.0980];
+if compute_K
+    rnd = rnd_scale_K*rand(num_K,3);
+    tol = 1e-8;
+    K_results = zeros(num_K,4);
+    K_color = zeros(num_K,3);
+    K_norm = zeros(num_K,1);
+    for i=1:num_K
+        H = expm(hat_so3(rnd(i,:)));
+        Ad_test = double(f(H(1,1),H(1,2),H(1,3),H(2,1),H(2,2),H(2,3),H(3,1),H(3,2),H(3,3)));
+        D = kron(inv(H'),Ad_test)-eye(24);
+
+        K_results(i,1) = rnd(i,1);
+        K_results(i,2) = rnd(i,2);
+        K_results(i,3) = rnd(i,3);
+        K_results(i,4) = rank(D,tol);
+        K_norm(i,1) = norm(K_results(i,1:3));
+        if K_results(i,4)<24
+            K_results(i,5) = 0;
+            K_color(i,:) = [0, 0.4470, 0.7410];
+        elseif K_results(i,4) == 24
+    %         H
+            K_results(i,5) = 1;
+            K_color(i,:) = [0.8500, 0.3250, 0.0980];
+        end
     end
+
+    K = figure(1);
+    S = repmat(25,num_K,1);
+    scatter3(K_results(:,1),K_results(:,2),K_results(:,3),S,K_color(:,:),'filled');
+    xlabel("x")
+    ylabel("y")
+    zlabel("z")
+
+    K2 = figure(2);
+    scatter(K_norm,K_results(:,5),S,K_color,'filled');
 end
-
-K = figure(1);
-S = repmat(25,num_K,1);
-scatter3(K_results(:,1),K_results(:,2),K_results(:,3),S,K_color(:,:),'filled');
-xlabel("x")
-ylabel("y")
-zlabel("z")
-
-K2 = figure(2);
-scatter(K_norm,K_results(:,5),S,K_color,'filled');
-
 %%
-idx = K_results(:,5) == 1;
-no_sol_K = K_results(idx,:);
-no_sol_norm = K_norm(idx,:);
-no_sol_norm_mod_pi = mod(no_sol_norm,pi);
-histogram(no_sol_norm_mod_pi,314);
+% idx = K_results(:,5) == 1;
+% no_sol_K = K_results(idx,:);
+% no_sol_norm = K_norm(idx,:);
+% no_sol_norm_mod_pi = mod(no_sol_norm,pi);
+% K3 = figure(3);
+% histogram(no_sol_norm_mod_pi,314);
 
 %% A
-num_A = 100;
-rnd_scale_A = 100;
-% rnd = 
+if compute_A
+    rnd = rnd_scale_A*rand(num_A,2);
+    tol = 1e-8;
+    A_results = zeros(num_A,4);
+    A_color = zeros(num_A,3);
+    A_norm = zeros(num_A,1);
+    for i = 1:num_A
+        a1 = rnd(i,1);
+%         a2 = rnd(i,2);
+        a2 = 1/a1;
+        H = [a1, 0,0; 0,a2,0;0,0,1/a1/a2];
+%         H = [a1,0,0; 0,1/a1,0;0,0,1];
+        
+        Ad_test = double(f(H(1,1),H(1,2),H(1,3),H(2,1),H(2,2),H(2,3),H(3,1),H(3,2),H(3,3)));
+        D = kron(inv(H'),Ad_test)-eye(24);
+
+        A_results(i,1) = a1;
+        A_results(i,2) = a2;
+        A_results(i,4) = rank(D,tol);
+        A_norm(i,1) = norm(A_results(i,1:2));
+        if A_results(i,4)<24
+            A_results(i,5) = 0;
+            A_color(i,:) = [0, 0.4470, 0.7410];
+        elseif A_results(i,4) == 24
+%             H
+            A_results(i,5) = 1;
+            A_color(i,:) = [0.8500, 0.3250, 0.0980];
+        end
+    end
+
+    A_figure1 = figure(1);
+    S = repmat(25,num_A,1);
+    scatter(A_results(:,1),A_results(:,2),S,A_color(:,:),'filled');
+    xlabel("x")
+    ylabel("y")
+    zlabel("z")
+    title("Solution existence for A")
+
+    A_figure2 = figure(2);
+    scatter(A_norm,A_results(:,5),S,A_color,'filled');
+    
+    
+    idx_A = A_results(:,5) == 1;
+    no_sol_A = A_results(idx_A,:);
+end
+
+%% N
+if compute_N
+    rnd = rnd_scale_N*rand(num_N,3);
+    tol = 1e-8;
+    N_results = zeros(num_N,4);
+    N_color = zeros(num_N,3);
+    N_norm = zeros(num_N,1);
+    for i = 1:num_N
+        n1 = rnd(i,1);
+        n2 = rnd(i,2);
+        n3 = rnd(i,3);
+        H = [1 n1 n2; 0 1 n3; 0 0 1];
+        
+        Ad_test = double(f(H(1,1),H(1,2),H(1,3),H(2,1),H(2,2),H(2,3),H(3,1),H(3,2),H(3,3)));
+        D = kron(inv(H'),Ad_test)-eye(24);
+
+        N_results(i,1) = n1;
+        N_results(i,2) = n2;
+        N_results(i,3) = n3;
+        N_results(i,4) = rank(D,tol);
+        N_norm(i,1) = norm(N_results(i,1:2));
+        if N_results(i,4)<24
+            N_results(i,5) = 0;
+            N_color(i,:) = [0, 0.4470, 0.7410];
+        elseif N_results(i,4) == 24
+%             H
+            N_results(i,5) = 1;
+            N_color(i,:) = [0.8500, 0.3250, 0.0980];
+        end
+    end
+
+    N_figure1 = figure(1);
+    S = repmat(25,num_N,1);
+    scatter3(N_results(:,1),N_results(:,2),N_results(:,3),S,N_color(:,:),'filled');
+    xlabel("x")
+    ylabel("y")
+    zlabel("z")
+    title("Solution existence for N")
+
+    N_figure2 = figure(2);
+    scatter(N_norm,N_results(:,5),S,N_color,'filled');
+    
+    
+    idx_N = N_results(:,5) == 1;
+    no_sol_N = N_results(idx_N,:);
+end
