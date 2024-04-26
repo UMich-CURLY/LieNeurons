@@ -10,9 +10,13 @@ num_A = 1000;
 rnd_scale_A = 100;
 
 
-compute_N = true;
+compute_N = false;
 num_N = 1000;
 rnd_scale_N = 100;
+
+compute_KN = true;
+num_KN = 1000;
+rnd_scale_KN = 1;
 
 syms v1 v2 v3 v4 v5 v6 v7 v8
 assumeAlso([v1 v2 v3 v4 v5 v6 v7 v8],'real')
@@ -185,7 +189,7 @@ if compute_N
         N_results(i,2) = n2;
         N_results(i,3) = n3;
         N_results(i,4) = rank(D,tol);
-        N_norm(i,1) = norm(N_results(i,1:2));
+        N_norm(i,1) = norm(N_results(i,1:3));
         if N_results(i,4)<24
             N_results(i,5) = 0;
             N_color(i,:) = [0, 0.4470, 0.7410];
@@ -210,4 +214,58 @@ if compute_N
     
     idx_N = N_results(:,5) == 1;
     no_sol_N = N_results(idx_N,:);
+end
+
+%% KN
+if compute_KN
+    rnd = rnd_scale_KN*rand(num_KN,3);
+    rnd2 = rnd_scale_KN*rand(num_KN,3);
+    tol = 1e-8;
+    KN_results = zeros(num_KN,4);
+    KN_color = zeros(num_KN,3);
+    KN_norm = zeros(num_KN,1);
+    for i = 1:num_KN
+        n1 = rnd(i,1);
+        n2 = rnd(i,2);
+        n3 = rnd(i,3);
+        N = [1 n1 n2; 0 1 n3; 0 0 1];
+        K = expm(hat_so3(rnd2(i,:)));
+
+        H = K*N;
+
+        Ad_test = double(f(H(1,1),H(1,2),H(1,3),H(2,1),H(2,2),H(2,3),H(3,1),H(3,2),H(3,3)));
+        D = kron(inv(H'),Ad_test)-eye(24);
+
+        KN_results(i,1) = n1;
+        KN_results(i,2) = n2;
+        KN_results(i,3) = n3;
+        KN_results(i,4) = rank(D,tol);
+        KN_results(i,6) = rnd2(i,1);
+        KN_results(i,7) = rnd2(i,2);
+        KN_results(i,8) = rnd2(i,3);
+        KN_norm(i,1) = norm(KN_results(i,1:3));
+        if KN_results(i,4)<24
+            KN_results(i,5) = 0;
+            KN_color(i,:) = [0, 0.4470, 0.7410];
+        elseif KN_results(i,4) == 24
+%             H
+            KN_results(i,5) = 1;
+            KN_color(i,:) = [0.8500, 0.3250, 0.0980];
+        end
+    end
+
+    KN_figure1 = figure(1);
+    S = repmat(25,num_N,1);
+    scatter3(KN_results(:,1),KN_results(:,2),KN_results(:,3),S,KN_color(:,:),'filled');
+    xlabel("x")
+    ylabel("y")
+    zlabel("z")
+    title("Solution existence for KN")
+
+    N_figure2 = figure(2);
+    scatter(KN_norm,KN_results(:,5),S,KN_color,'filled');
+    
+    
+    idx_KN = KN_results(:,5) == 1;
+    no_sol_KN = KN_results(idx_KN,:);
 end
