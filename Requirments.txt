@@ -1,0 +1,9 @@
+torch==2.2.2
+numpy==1.26.4
+matplotlib==3.7.5
+scipy==1.13.0
+tensorboard==2.16.2
+
+einops 
+pyyaml
+pandas

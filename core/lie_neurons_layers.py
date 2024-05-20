@@ -121,9 +121,6 @@ class LNLieBracketNoResidualConnect(nn.Module):
             self.learn_dir = nn.Linear(in_channels, in_channels, bias=False)
             self.learn_dir2 = nn.Linear(in_channels, in_channels, bias=False)
 
-        # torch.nn.init.uniform_(self.learn_dir.weight, a=0.0, b=0.5)
-        # torch.nn.init.uniform_(self.learn_dir2.weight, a=0.0, b=0.5)
-
         self.HatLayer = HatLayer()
         self.relu = LNKillingRelu(
             in_channels, share_nonlinearity=share_nonlinearity)
@@ -145,29 +142,6 @@ class LNLieBracketNoResidualConnect(nn.Module):
         d2_hat = self.HatLayer(d2)
         lie_bracket = torch.matmul(d2_hat, d_hat) - torch.matmul(d_hat,d2_hat)
         x_out = vee(lie_bracket,self.algebra_type).transpose(2, -1)
-        
-        # print("avg XY: ", torch.mean(torch.matmul(d2_hat, d_hat)))
-        # print("avg YX: ", torch.mean(torch.matmul(d_hat,d2_hat)))
-        # print("avg out: ", torch.mean(x_out))
-
-        # print("median XY: ", torch.median(torch.matmul(d2_hat, d_hat)))
-        # print("median YX: ", torch.median(torch.matmul(d_hat,d2_hat)))
-        # print("median out: ", torch.median(x_out))
-
-        # print("max XY: ", torch.max(torch.matmul(d2_hat, d_hat)))
-        # print("max YX: ", torch.max(torch.matmul(d_hat,d2_hat)))
-        # print("max out: ", torch.max(x_out))
-
-        # print("min XY: ", torch.min(torch.abs(torch.matmul(d2_hat, d_hat))))
-        # print("min YX: ", torch.min(torch.abs(torch.matmul(d_hat,d2_hat))))
-        # print("min out: ", torch.min(torch.abs(x_out)))
-
-        # print("avg X: ", torch.mean(x))
-        # print("median X: ", torch.median(x))
-        # print("max X: ", torch.max(x))
-        # print("min X: ", torch.min(torch.abs(x)))
-        # print("--------------------------------------------")
-
         return x_out
 
 
@@ -221,7 +195,7 @@ class LNLieBracketChannelMix(nn.Module):
         if self.residual_connect:
             x_out = x + vee(lie_bracket,self.algebra_type).transpose(2, -1)
         else:
-            x_out = x + vee(lie_bracket,self.algebra_type).transpose(2, -1)
+            x_out = vee(lie_bracket,self.algebra_type).transpose(2, -1)
         return x_out
 
 
@@ -293,8 +267,6 @@ class LNLinearAndLieBracketNoResidualConnect(nn.Module):
         self.linear = LNLinear(in_channels, out_channels)
         self.liebracket = LNLieBracketNoResidualConnect(
             out_channels, algebra_type=algebra_type, share_nonlinearity=share_nonlinearity)
-        
-        # torch.nn.init.uniform_(self.linear.fc.weight, a=0.0, b=0.5)
 
     def forward(self, x):
         '''
