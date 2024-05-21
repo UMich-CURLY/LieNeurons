@@ -3,6 +3,7 @@ import numpy as np
 
 # Create a quaternion
 q  = scipy_rot.from_quat([0, 0, np.sin(np.pi/4), np.cos(np.pi/4)]) # x, y, z, w
+
 R1 = q.as_matrix()
 
 dt = 1/200.0
@@ -12,4 +13,5 @@ R3 = R1 @ R2
 
 print("R3: \n", R3)
 
+# q.apply()
 

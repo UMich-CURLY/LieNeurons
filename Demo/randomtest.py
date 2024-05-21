@@ -138,12 +138,5 @@ print("df['time'][0]:", df['time'][0])
 #     img_path = row['image_path']
 #     label = row['label']
 
-import numpy as np
-# import quaternion
 
-
-# q1 = np.quaternion(1,2,3,4)
-# q1.normalized()
-
-# quaternion.integrate_angular_velocity(q1, np.array([0.1, 0.2, 0.3]), 0.1)
 
