@@ -133,10 +133,21 @@ print("df.iloc[1]:", df.iloc[1])
 
 print("df['time'][0]:", df['time'][0])
 
+print("df[time] type:",df['time'].dtype)
+print("df[wx] type:",df['w_x'].dtype)
+
+
 # Iterate through the DataFrame
 # for index, row in data_frame.iterrows():
 #     img_path = row['image_path']
 #     label = row['label']
 
+a = torch.tensor([1.0, 2.0, 3.0])
+b = a.unsqueeze(0)
+print("a shape:", a.shape)
+print("b shape:", b.shape)
+c = a.unsqueeze_(0)
+print("a shape:", a.shape)
+print("c shape:", c.shape)
 
 

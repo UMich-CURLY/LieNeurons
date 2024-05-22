@@ -47,4 +47,10 @@ ax[2].set_ylabel('a_z')
 ax[2].legend()
 
 fig.tight_layout()
-plt.show()
+# plt.show()
+
+datanp = IMUdata.get_data()
+dt = IMUdata.get_dt()
+print("dt:", dt)
+print("datanp[0,0]:", datanp[0,0])
+print("datanp[1,0]:", datanp[1,0])

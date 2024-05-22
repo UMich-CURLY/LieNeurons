@@ -7,3 +7,4 @@ tensorboard==2.16.2
 einops 
 pyyaml
 pandas
+pytorch3d
