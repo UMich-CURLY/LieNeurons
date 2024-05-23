@@ -123,12 +123,16 @@ if __name__ == "__main__":
     # Example batch of quaternions
     q0_batch = torch.tensor([[1.0, 0.0, 0.0, 0.0], [0.70711, 0.18898, 0.37796, 0.56695]])
     q1_batch = torch.tensor([[0.0, 1.0, 0.0, 0.0], [0.96593, 0.20752,  0.13834, 0.069172]])
-    t_batch = torch.tensor([0.5, 0.75])
+    t_batch = torch.tensor([0.5, 0.75]) 
 
     # Perform batch SLERP
     q_interp_batch = batch_slerp(q0_batch, q1_batch, t_batch)
 
     print("Batch Interpolated Quaternions:", q_interp_batch)
+    t_batch = torch.tensor([0.75])
+    q_interp_batch = batch_slerp(q0_batch, q1_batch, t_batch)
+    print("Batch Interpolated Quaternions:", q_interp_batch)
+
 
     # Apply quaternion to vector
     q1 = torch.tensor([0.70711, 0.18898, 0.37796, 0.56695])  # Example quaternion

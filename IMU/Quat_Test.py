@@ -15,3 +15,14 @@ print("R3: \n", R3)
 
 # q.apply()
 
+temp = np.arange(0, 10, 1)
+print(temp)
+
+temp = np.arange(0, 10)
+print(temp)
+
+import torch
+batch_time_series = 100
+batch_size = 10
+s = torch.arange(0,batch_time_series * batch_size, batch_time_series)
+print(s)
