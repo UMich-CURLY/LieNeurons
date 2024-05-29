@@ -90,10 +90,13 @@ def quaternion_apply_vec(q: torch.Tensor, vec: torch.Tensor):
         z = w1 * z2 + x1 * y2 - y1 * x2 + z1 * w2
         return torch.stack([w, x, y, z], dim=-1)
     
+    flag_batch = 0
     if q.dim() == 1:  # Single quaternion
         q = q.unsqueeze(0)
+        flag_batch += 1
     if vec.dim() == 1:  # Single vector
         vec = vec.unsqueeze(0)
+        flag_batch += 1
     
     q_norm = torch.norm(q, dim=-1, keepdim=True)
     q_normalized = q / q_norm
@@ -103,7 +106,8 @@ def quaternion_apply_vec(q: torch.Tensor, vec: torch.Tensor):
     
     q_rotated = quat_multiply(quat_multiply(q_normalized, q_vec), q_inv)
 
-    return q_rotated[..., 1:] if q_rotated.shape[0] > 1 or q_rotated.dim() > 2   else q_rotated[0, 1:]
+    # return q_rotated[..., 1:] if q_rotated.shape[0] > 1 or q_rotated.dim() > 2   else q_rotated[0, 1:]
+    return q_rotated[..., 1:] if flag_batch < 2 else q_rotated[0, 1:]
 
 
 if __name__ == "__main__":

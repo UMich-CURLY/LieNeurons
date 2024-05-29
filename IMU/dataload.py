@@ -46,8 +46,11 @@ class IMUDataset(Dataset):
     
     def get_dt(self):
         return self.dt
+    
+    def set_init_time_to_zero(self):
+        self.data['time'] = self.data['time'] - self.data['time'][0]
 
-class GroudtruethDataset(Dataset):
+class GroudtruthDataset(Dataset):
     def __init__(self, csv_file, yaml_file = None, transform=ToTensor()):
         self.data = pd.read_csv(csv_file, header=1, names=["time", "px", "py", "pz", "qw", "qx", "qy", "qz", "vx", "vy", "vz", "bgx", "bgy", "bgz", "bax", "bay", "baz"])
         
@@ -70,8 +73,11 @@ class GroudtruethDataset(Dataset):
         
         return sample
 
+    def set_init_time_to_zero(self):
+        self.data['time'] = self.data['time'] - self.data['time'][0]
 
-def align_time(IMUdata: IMUDataset, GTdata: GroudtruethDataset):
+
+def align_time(IMUdata: IMUDataset, GTdata: GroudtruthDataset):
     time_baseline = max(IMUdata.data['time'][0], GTdata.data['time'][0])
     
     if time_baseline == IMUdata.data['time'][0]:
@@ -131,7 +137,7 @@ def align_time(IMUdata: IMUDataset, GTdata: GroudtruethDataset):
 #         return self.data
     
 
-# class GroudtruethDataset(Dataset):
+# class GroudtruthDataset(Dataset):
 #     def __init__(self, csv_file, yaml_file = None) -> None:
 #         super().__init__()
 #         self.ori_data = pd.read_csv(csv_file, header=1)

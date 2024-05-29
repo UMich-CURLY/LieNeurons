@@ -1,92 +1,41 @@
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
-from IMU.dataload import IMUDataset, GroudtruethDataset, align_time
+from IMU.dataload import IMUDataset, GroudtruthDataset, align_time
 
-from Plot_function import plt3dvec
 from torch.utils.data import DataLoader
 from torchdiffeq import odeint
-from quat_func import batch_slerp, quaternion_apply_vec
+
 
 import os
 
 from torch.utils.tensorboard import SummaryWriter
 
+from IMU_layers import *
+
+import argparse
+
+parser = argparse.ArgumentParser('Only Acc Test')
+parser.add_argument('--model_type', type=str, default='unspecified')
+args = parser.parse_args()
+
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-model_save_path = "weights/IMU_Dynamics/acc_only/"
-log_writer_path = "logs/IMU_Dynamics/acc_only/"
-train_batch_time_series = 20
+if args.model_type == 'unspecified':
+    model_type = "Acc_model_LN_1"
+else:
+    model_type = args.model_type
+
+model_save_path = "weights/IMU_Dynamics/acc_only/"+ model_type + "/"
+log_writer_path = "logs/IMU_Dynamics/acc_only/" + model_type + "/"
+
+train_batch_time_series = 25
 train_batch_size = 10
 niter = 2000
 val_freq = 10
 save_freq = 100
 
-
-def interpolate_u(t, u, Dt):
-    """
-    Warning, when t is out of the range of u, the function will return the last element of u
-    """
-    ii = int(t // Dt)
-    if ii >= len(u) - 1:
-        ii = len(u) - 1
-        u_t_interpolated = u[ii]
-    else:
-        u_t_interpolated = u[ii] + (t - ii * Dt) * (u[ii + 1] - u[ii]) / Dt
-    return u_t_interpolated
-
-def quat_interpolation(t, quat, Dt):
-    """
-    quat: [time_series, batch_size, 4] 
-    """
-    ii = int(t // Dt)
-    if ii >= quat.shape[0] - 1:
-        ii = quat.shape[0] - 1
-        quat_t_interpolated = quat[ii]
-    else:
-        # keep the shape of quat as [batch_size, 4] even if batch_size = 1
-        t_inter = torch.tensor([t - ii * Dt]).to(device)
-        quat_t_interpolated = batch_slerp(quat[ii], quat[ii + 1], t_inter) 
-    return quat_t_interpolated
-
-class accel_func(torch.nn.Module):
-    def __init__(self):
-        super().__init__()
-        self.net = torch.nn.Sequential(
-            torch.nn.Linear(3, 64),
-            torch.nn.ReLU(),
-            torch.nn.Linear(64, 3)
-        )
-
-        for m in self.net.modules():
-            if isinstance(m, torch.nn.Linear):
-                torch.nn.init.normal_(m.weight, mean=0, std=0.1)
-                torch.nn.init.constant_(m.bias, 0)
-
-    def forward(self, y):
-        return self.net(y)
-
-
-
-class ODE_vp_func(torch.nn.Module):
-    """
-    d(v,p) = (Ra+g, v)
-    """
-    def __init__(self):
-        super().__init__()
-        self.g = torch.tensor([0, 0, -9.81]).to(device)
-
-    def forward(self, t, y, u, quat, Dt):
-        """
-        y = [v, p],                 shape: batch_size * 6
-        u = [a],                    shape: time_serire * batch_size * 3
-        quat = [qw, qx, qy, qz]     shape: time_serire * batch_size * 4
-        Dt: torch scalar aussme u and quat have the same Dt
-        """
-        qt = quat_interpolation(t, quat, Dt)    # shape: batch_size * 4
-        ut = interpolate_u(t, u, Dt)            # shape: batch_size * 3
-        Ra = quaternion_apply_vec(qt, ut)       # shape: batch_size * 3
-        return torch.cat((Ra + self.g, y[:,0:3]), dim=-1).to(device)
+torch.manual_seed(256)
     
 def get_batch(IMUdata, GTdata, batch_time_series = 100, batch_size = 10,):
     """
@@ -147,7 +96,7 @@ if __name__ == "__main__":
     IMU_Dt = IMUdata.get_dt()
     IMU_Dt =torch.tensor(IMU_Dt).to(device)
 
-    GTdata = GroudtruethDataset(csv_file="data/V2_01_easy/mav0/state_groundtruth_estimate0/data.csv")
+    GTdata = GroudtruthDataset(csv_file="data/V2_01_easy/mav0/state_groundtruth_estimate0/data.csv")
     """
     time, px, py, pz, qw, qx, qy, qz, vx, vy, vz, bgx, bgy, bgz, bax, bay, baz
     Dt = 0.005 s
@@ -169,12 +118,19 @@ if __name__ == "__main__":
         print("model does not exist, initialize best loss")
     break_flag = 0
     ##---------------------------------##
-    acc_network = accel_func().to(device)
+    # acc_network = accel_func().to(device)
+    acc_network = model_choose(model_type).to(device)
     vpODEfunc = ODE_vp_func().to(device)
 
     optimizer = torch.optim.Adam(list(vpODEfunc.parameters()) + list(acc_network.parameters()), lr=0.01)
-    criterion = torch.nn.MSELoss()
+    # criterion = torch.nn.MSELoss()
+    criterion = torch.nn.L1Loss()
 
+    val_batch_time, val_batch_y0, val_batch_y, val_batch_a, val_batch_quat = get_validation_batch(IMUdata, GTdata, batch_time_series=50, batch_size=5)
+    func_with_u_original = lambda t, y: vpODEfunc(t, y, val_batch_a, val_batch_quat, IMU_Dt)
+    val_pred_y_original = odeint(func_with_u_original, val_batch_y0, val_batch_time, method='dopri5').to(device)
+    val_loss_original = criterion(val_pred_y_original, val_batch_y)
+    print(f"Original validation loss: {val_loss_original.item()}")
     for iiter in range(niter):
         optimizer.zero_grad()
 
@@ -185,7 +141,7 @@ if __name__ == "__main__":
         # print("batch_a.shape:", batch_a.shape)
         # print("batch_quat.shape:", batch_quat.shape)
 
-        func_with_u = lambda t, y: vpODEfunc(t, y, acc_network(batch_a), batch_quat, IMU_Dt)
+        func_with_u = lambda t, y: vpODEfunc(t, y, batch_a + acc_network(batch_a), batch_quat, IMU_Dt)
 
         pred_y = odeint(func_with_u, batch_y0, batch_time, method='dopri5').to(device)
         loss = criterion(pred_y, batch_y)
@@ -196,8 +152,8 @@ if __name__ == "__main__":
         
         if iiter % val_freq == 0:
             with torch.no_grad():
-                val_batch_time, val_batch_y0, val_batch_y, val_batch_a, val_batch_quat = get_validation_batch(IMUdata, GTdata, batch_time_series=50, batch_size=5)
-                func_with_u_val = lambda t, y: vpODEfunc(t, y, acc_network(val_batch_a), val_batch_quat, IMU_Dt)
+                
+                func_with_u_val = lambda t, y: vpODEfunc(t, y, val_batch_a + acc_network(val_batch_a), val_batch_quat, IMU_Dt)
                 val_pred_y = odeint(func_with_u_val, val_batch_y0, val_batch_time, method='dopri5').to(device)
                 val_loss = criterion(val_pred_y, val_batch_y)
                 writer.add_scalar('validation loss', val_loss.item(), iiter)
@@ -207,10 +163,11 @@ if __name__ == "__main__":
                 if val_loss < best_loss:
                     best_loss = val_loss
                     torch.save({'loss': best_loss, 'model': acc_network.state_dict()}, model_save_path + '_best_val_loss_acc.pt')
+                    break_flag = 0
                 else:
                     break_flag += 1
                     if break_flag > 20:
-                        print("Early stopping")
+                        print("Early stopped at iteration: ", iiter)
                         break
                     
         if iiter % save_freq == 0:

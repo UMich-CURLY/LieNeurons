@@ -1,56 +1,56 @@
 import torch
+import os, sys
 import matplotlib.pyplot as plt
 
-from IMU.dataload import IMUDataset
+from dataload import IMUDataset
 
-IMUdata = IMUDataset(csv_file="data/MH_02_easy/mav0/imu0/data.csv", yaml_file="data/MH_02_easy/mav0/imu0/sensor.yaml")
-IMUdata.convert_time_ns_to_s(set_init_time_to_zero=True)
+from Plot_function import vec3d_31_plotter
 
-plot_len = 10000
-fig, ax = plt.subplots(3,1)
-ax[0].plot(IMUdata.get_data()[:plot_len,0], IMUdata.get_data()[:plot_len,1], label='w_x')
-ax[1].plot(IMUdata.get_data()[:plot_len,0], IMUdata.get_data()[:plot_len,2], label='w_y')
-ax[2].plot(IMUdata.get_data()[:plot_len,0], IMUdata.get_data()[:plot_len,3], label='w_z')
+sys.path.append(os.path.dirname(os.getcwd()))
 
-ax[0].set_title('Angular Velocity')
-ax[0].set_xlabel('time (s)')
-ax[0].set_ylabel('w_x')
-ax[0].legend()
 
-ax[1].set_xlabel('time (s)')
-ax[1].set_ylabel('w_y')
-ax[1].legend()
+# print(os.path.dirname(os.getcwd()))
 
-ax[2].set_xlabel('time (s)')
-ax[2].set_ylabel('w_z')
-ax[2].legend()
-fig.tight_layout()
-# fig.waitforbuttonpress()
-plt.show(block=False)
+data_type = 'V2_02_medium'
+data_type = 'V2_01_easy'
 
-fig, ax = plt.subplots(3,1)
-ax[0].plot(IMUdata.get_data()[:plot_len,0], IMUdata.get_data()[:plot_len,4], label='a_x')
-ax[1].plot(IMUdata.get_data()[:plot_len,0], IMUdata.get_data()[:plot_len,5], label='a_y')
-ax[2].plot(IMUdata.get_data()[:plot_len,0], IMUdata.get_data()[:plot_len,6], label='a_z')
+IMUdata = IMUDataset(csv_file="data/"+data_type+"/mav0/imu0/data.csv", yaml_file="data/"+data_type+"/mav0/imu0/sensor.yaml")
+IMUdata.set_init_time_to_zero()
 
-ax[0].set_title('Acceleration')
-ax[0].set_xlabel('time (s)')
-ax[0].set_ylabel('a_x')
-ax[0].legend()
+myplotter = vec3d_31_plotter()
+acc_batch = IMUdata[0:1000]
 
-ax[1].set_xlabel('time (s)')
-ax[1].set_ylabel('a_y')
-ax[1].legend()
+myplotter.pltvec3d(acc_batch[:,0],acc_batch[:,4:7])
 
-ax[2].set_xlabel('time (s)')
-ax[2].set_ylabel('a_z')
-ax[2].legend()
+from IMU_layers import Acc_model_LN_1, Acc_model_mlp_1, Acc_model_mlp_2, model_choose
 
-fig.tight_layout()
+model_type = 'Acc_model_LN_1'
+
+model = Acc_model_LN_1().to('cuda')
+model.load_state_dict(torch.load("weights/IMU_Dynamics/acc_only/"+ model_type + "/" +'_best_val_loss_acc.pt')['model'])
+with torch.no_grad():
+    acc_delta = model(acc_batch[:,4:7].unsqueeze_(1).to('cuda'))
+    acc_delta = acc_delta.squeeze(1)
+    print(acc_delta.shape)
+    acc_denoised = acc_batch[:,4:7] + acc_delta.cpu()
+
+
+myplotter.addvec3d(acc_batch[:,0],acc_denoised)
+plt.show()
+
+
+# plt.subplot(3,1,1)
+# plt.plot(acc_batch[:,0],acc_batch[:,4])
+# plt.plot(acc_batch[:,0],acc_denoised[:,0].cpu().numpy())
+# plt.subplot(3,1,2)
+# plt.plot(acc_batch[:,0],acc_batch[:,5])
+# plt.plot(acc_batch[:,0],acc_denoised[:,1].cpu().numpy())
+# plt.subplot(3,1,3)
+# plt.plot(acc_batch[:,0],acc_batch[:,6])
+# plt.plot(acc_batch[:,0],acc_denoised[:,2].cpu().numpy())
 # plt.show()
 
-datanp = IMUdata.get_data()
-dt = IMUdata.get_dt()
-print("dt:", dt)
-print("datanp[0,0]:", datanp[0,0])
-print("datanp[1,0]:", datanp[1,0])
+
+
+
+
