@@ -30,7 +30,23 @@ def LieGroup_integration(func, t, R0 = torch.eye(3), device = 'cpu'):
     R0 = R0.to(device)
     pass
 
+def Increament_loss(func, u: torch.Tensor, X_true: torch.Tensor, device = 'cpu'):
+    """func(t,w_window)"""
+    """u input, i.e. IMU measurement, w and a, shape (batch, windows_size, 6)"""
+    """X_true batch SE(3) or SE_2(3) matrices, shape (batch, windows_size, 4, 4)"""
+    N = X_true.shape[0]
+    Delta_X =X_true[1:] @ X_true[:-1].inverse()
+    # predicted incremental 
+    Delta_X_hat = ode_like
+    # loss
+    loss = torch.nn.functional.mse_loss(Delta_X_hat, Delta_X)
+    return loss
+
 ## get batch
+
+
+
+
 
 ## train loop
 
