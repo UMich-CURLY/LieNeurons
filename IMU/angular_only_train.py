@@ -1,5 +1,6 @@
 import torch
 
+from lie_algebra import SEn3inverse
 
 ## general parameters
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -35,7 +36,8 @@ def Increament_loss(func, u: torch.Tensor, X_true: torch.Tensor, device = 'cpu')
     """u input, i.e. IMU measurement, w and a, shape (batch, windows_size, 6)"""
     """X_true batch SE(3) or SE_2(3) matrices, shape (batch, windows_size, 4, 4)"""
     N = X_true.shape[0]
-    Delta_X =X_true[1:] @ X_true[:-1].inverse()
+    Delta_X_true = torch.matmul(SEn3inverse(X_true) , torch.roll(X_true, shifts=-1, dims=1))
+    
     # predicted incremental 
     Delta_X_hat = ode_like
     # loss
@@ -70,3 +72,5 @@ for i in range(niter):
     ## log
     pass
 
+if __name__ == '__main__':
+    pass
