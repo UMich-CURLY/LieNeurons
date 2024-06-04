@@ -13,7 +13,7 @@ def screw_axis_from_joint(direction_axis : torch.Tensor, p_on_axis : None, joint
     if joint_type == 'revolute':
         if p_on_axis is None:
             raise ValueError('A point on the axis is needed for revolute joint')
-        return torch.cat((direction_axis, torch.cross(p_on_axis, direction_axis)))
+        return torch.cat((direction_axis, torch.linalg.cross(p_on_axis, direction_axis)))
     elif joint_type == 'prismatic':
         return torch.cat((direction_axis, torch.tensor([0, 0, 0])))
     else:
@@ -48,7 +48,7 @@ def SE3exp_from_unit_twist(twist, theta)->torch.Tensor:
         return output
     else:
         output[:3, :3] = R
-        output[:3, 3] = (torch.eye(3) - R) @ torch.cross(omega, v) + omega * omega @ v * theta
+        output[:3, 3] = (torch.eye(3) - R) @ torch.linalg.cross(omega, v) + omega * omega @ v * theta
         return output
         
 
@@ -112,6 +112,7 @@ def forward_kinematics(twist_all, theta_all, gst0)->torch.Tensor:
 
 if __name__ == '__main__':
     torch.set_default_dtype(torch.float64)
+    torch.set_printoptions(precision=3, sci_mode=False)
 
     tw1 = screw_axis_from_joint(torch.tensor([1., 0, 0]), torch.tensor([1., 2, 3]), 'revolute')
     tw2 = screw_axis_from_joint(torch.tensor([0., 1, 0]), torch.tensor([4., 5, 6]), 'revolute')
@@ -130,6 +131,9 @@ if __name__ == '__main__':
 
     Jb = Body_Jacobian(tw_all, theta_all, gst0)
     print(Jb)
+
+    Js = Adjoint_from_SE3(gst) @ Jb
+    print("Js: \n", Js)
 
     # SE3_test = SE3exp_from_unit_twist(tw3,torch.tensor(0.5))
     # print(SE3_test)

@@ -27,6 +27,34 @@ def so3hat(w: torch.Tensor)->torch.Tensor:
                         w[..., 2], torch.zeros_like(w[..., 0]), -w[..., 0],
                         -w[..., 1], w[..., 0], torch.zeros_like(w[..., 0])], dim=-1).reshape(w.shape[:-1]+(3,3))
     
+def so3vee(W: torch.Tensor)->torch.Tensor:
+    """W shape (..., 3, 3)"""
+    return torch.stack([W[..., 2, 1], W[..., 0, 2], W[..., 1, 0]], dim=-1)
+
+def sen3hat(xi: torch.Tensor)->torch.Tensor:
+    """xi shape (..., 3*n), n = 1,2,3..."""
+    dim_mat = round(xi.shape[-1] // 3) +2 
+    output = torch.zeros(xi.shape[:-1]+(dim_mat,dim_mat)).to(xi.device)
+    output[..., :3, :3] = so3hat(xi[..., :3])
+    output[..., :3, 3:] = xi[...,3:].reshape(*xi.shape[:-1], -1,3).transpose(-1,-2)
+    return output
+
+def sen3vee(X: torch.Tensor)->torch.Tensor:
+    """X shape (..., 3+n, 3+n), n = 1,2,3..."""
+    reshaped_tensor = X[...,:3,3:].transpose(-1,-2).reshape(*X.shape[:-2], -1)
+    return torch.cat((so3vee(X[..., :3, :3]), reshaped_tensor), dim = -1)
+
+def SEn3exp(xi: torch.Tensor, eps = 1e-6)->torch.Tensor:
+    """xi shape (..., 3*n), n = 1,2,3..."""
+    phi = xi[..., :3]
+    R = SO3exp(phi)
+    dim_mat = round(xi.shape[-1]//3)+2
+    output = torch.eye(dim_mat).expand(xi.shape[:-1]+(dim_mat,dim_mat)).to(xi.device)
+    output[..., :3, :3] = R
+    Jl =SO3leftJaco(phi)
+    for i in range(1, round(xi.shape[-1]//3)):
+        output[..., :3, i+2] = (Jl @ xi[..., 3*i:3*(i+1)].unsqueeze(-1)).squeeze(-1)
+    return output
 
 
 
@@ -74,25 +102,46 @@ def SEn3inverse(X: torch.Tensor, numerial_invese = False)->torch.Tensor:
             X_inv[..., :3, i] = - torch.matmul(X_inv[..., :3, :3], X[..., :3, i].unsqueeze(-1)).squeeze(-1)
     return X_inv
 
+
 def SEn3leftJaco(xi: torch.Tensor, eps = 1e-6)->torch.Tensor:
     """left jacobian of SEn(3), phi shape (..., 3*n), n = 1,2,3..., Order: xi_R, xi_v, xi_p ..."""
-    Jaco_left_SO3 = SO3leftJaco(xi[..., :3]) 
+    """                         phi should be (m1,m2,3*n) or (m1,3*n)"""
+    phi = xi[..., :3]
 
+    theta = torch.norm(phi, dim = -1, keepdim = True)
+    mask_small_theta = theta[..., 0] < eps
+    Identity = torch.eye(xi.shape[-1]).expand(phi.shape[:-1]+(xi.shape[-1],xi.shape[-1])).to(phi.device)
 
-    # TODO: check singularity
-
-
-    N = xi.shape[-1] // 3
-    Jaco = torch.zeros(xi.shape[:-1]+(xi.shape[-1],xi.shape[-1])).to(xi.device)
-    Jaco[..., :3, :3] = Jaco_left_SO3
-    Ql = Ql_forSE3Jaco(xi)
-    for i in range(1,N):
-        Jaco[..., 3*i:3*(i+1), 3*i:3*(i+1)] = Jaco_left_SO3
-        Jaco[..., 3*i:3*(i+1), :3] = torch.zeros_like(Jaco[..., 3*i:3*(i+1), :3])
-
-
+    Jaco = torch.zeros_like(Identity)
+    Jaco[mask_small_theta] = Identity[mask_small_theta] + 0.5 * ad_sen3(xi[mask_small_theta])
+    Jaco_left_SO3 = SO3leftJaco(phi[~mask_small_theta])
+    temp = Jaco[~mask_small_theta]
+    for i in range(round(xi.shape[-1] // 3)):
+        temp[:, 3*i:3*(i+1), 3*i:3*(i+1)] = Jaco_left_SO3
+    temp[:, 3:, :3] = Ql_forSE3Jaco(xi[~mask_small_theta])
+    Jaco[~mask_small_theta] = temp
     return Jaco
 
+
+def SEn3leftJaco_inv(xi: torch.Tensor, eps = 1e-6)->torch.Tensor:
+    phi = xi[..., :3]
+
+    theta = torch.norm(phi, dim = -1, keepdim = True)
+    mask_small_theta = theta[..., 0] < eps
+    Identity = torch.eye(xi.shape[-1]).expand(phi.shape[:-1]+(xi.shape[-1],xi.shape[-1])).to(phi.device)
+
+    Jaco = torch.zeros_like(Identity)
+    Jaco[mask_small_theta] = Identity[mask_small_theta] - 0.5 * ad_sen3(xi[mask_small_theta])
+    Jaco_left_SO3_inv = SO3leftJacoInv(phi[~mask_small_theta])
+    temp = Jaco[~mask_small_theta]
+    Ql = Ql_forSE3Jaco(xi[~mask_small_theta])
+    temp[:, :3, :3] = Jaco_left_SO3_inv
+    for i in range(1, round(xi.shape[-1] // 3)):
+        temp[:, 3*i:3*(i+1), 3*i:3*(i+1)] = Jaco_left_SO3_inv
+        temp[:, 3*i:3*(i+1), :3] = - Jaco_left_SO3_inv @ Ql[:, 3*(i-1):3*i, :3] @ Jaco_left_SO3_inv
+    Jaco[~mask_small_theta] = temp
+    return Jaco
+    
 
 def Ql_forSE3Jaco(xi: torch.Tensor)->torch.Tensor:
     """Ql for SEn(3) left jacobian, phi shape (..., 3*n) Order: xi_R, xi_v, xi_p ..."""
@@ -112,9 +161,9 @@ def Ql_forSE3Jaco(xi: torch.Tensor)->torch.Tensor:
     c_theta = torch.cos(theta)
 
     m1 = 0.5
-    m2 = (theta - s_theta) / theta3
-    m3 = (theta2 + 2 * c_theta - 2) / (2 * theta4)
-    m4 = (2*theta - 3*s_theta + theta * c_theta) / (2 * theta5)
+    m2 = ((theta - s_theta) / theta3).unsqueeze(-1)
+    m3 = ((theta2 + 2 * c_theta - 2) / (2 * theta4)).unsqueeze(-1)
+    m4 = ((2*theta - 3*s_theta + theta * c_theta) / (2 * theta5)).unsqueeze(-1)
 
     for i in range(N-1):
         nu_wedge = so3hat(xi[..., 3*(i+1):3*(i+2)])
@@ -139,7 +188,7 @@ def ad_sen3(xi: torch.Tensor)->torch.Tensor:
     for i in range(1,N):
         adm[..., 3*i:3*(i+1), 3*i:3*(i+1)] = phi_wedge
         adm[..., 3*i:3*(i+1), :3] = so3hat(xi[..., 3*i:3*(i+1)])
-    pass
+    return adm
 
 
 if __name__ == '__main__':
@@ -159,7 +208,6 @@ if __name__ == '__main__':
         raise ValueError("error: ", error)
     else:
         print("SO3exp test passed, error: ", error)
-
 
 
     # test SEn3inverse
@@ -194,14 +242,80 @@ if __name__ == '__main__':
     else:
         print("SO3leftJaco and SO3leftJacoInv test passed, error: ", error)
 
-    ## test SEn3leftJaco
-    phi = torch.tensor([[torch.pi/3,0,0,1,0,0],[torch.pi*1.8,0,0,1,0,0],[0,0,0,1,0,0],[0,0,torch.pi/4,1,0,0]]).to(device).unsqueeze(0)
-    phi = phi.repeat(2,1,1)
-    # temp1 = SEn3leftJaco(phi)
-    # print(temp1)
+    # phi = torch.tensor([torch.pi * 1.8,0,0])
+    # temp1 = SO3leftJaco(phi)
+    # print("temp1.shape", temp1.shape)
+    # print("temp1 \n", temp1)
+    # import math
+    # Jaco_true = torch.eye(3).to(phi.device)
+    # ad_mult = torch.eye(3).to(phi.device)
+    # for i in range(1,20):
+    #     ad_mult = ad_mult @ so3hat(phi)
+    #     Jaco_true = Jaco_true + ad_mult / math.factorial(i+1)
+    # print("Jaco_true \n", Jaco_true)
 
-    def test():
-        return 1,2,3
+    ## test SEn3leftJaco
+    import math
+    xi = torch.tensor([[torch.pi/3,0,0,1,0,0],[torch.pi,0,0,1,0,0],[1e-4,0,0,1,0,0],[0,0,torch.pi/4,1,0,0]]).to(device).unsqueeze(0)
+    xi = xi.repeat(2,1,1)
+    xi = torch.randn(2,4,9).to(device)
+    # print("phi.shape", xi.shape)
+    Jaco_SE3_true = torch.eye(xi.shape[-1]).expand(xi.shape[:-1]+(xi.shape[-1],xi.shape[-1])).to(device)
+    ad_mult = Jaco_SE3_true.clone()
+    for i in range(1,20):
+        ad_mult = ad_mult @ ad_sen3(xi)
+        Jaco_SE3_true += ad_mult / math.factorial(i+1)
+    temp1 = SEn3leftJaco(xi)
+    error = torch.norm(temp1 - Jaco_SE3_true)
+    if error > 1e-6:
+        raise ValueError("error: ", error)
+    else:
+        print("SEn3leftJaco test passed, error: ", error)
+
+    ## test SEn3leftJaco_inv
+    xi = torch.randn(2,4,9).to(device)
+    temp1 = SEn3leftJaco_inv(xi)
+    temp2 = torch.matmul(temp1, SEn3leftJaco(xi))
+    error = torch.norm(temp2 - torch.eye(xi.shape[-1]).to(xi.device))
+    if error > 1e-6:
+        raise ValueError("error: ", error)
+    else:
+        print("SEn3leftJaco_inv test passed, error: ", error)
+
+    # for i in range(2):
+    #     for j in range(4):
+    #         print("error at ", i, j, ":", torch.norm(temp1[i,j,...] - Jaco_SE3_true[i,j,...]))
     
-    a = test()
-    print(a)
+    # print("temp1 \n", temp1[0,1,...])
+    # print("Jaco_SE3_true \n", Jaco_SE3_true[0,1,...])
+
+    # J_SO3 = SO3leftJaco(xi[..., :3])
+    # print("J_SO3 \n", J_SO3[0,0,...])
+
+    xi = torch.arange(1,10).to(device)
+    temp = sen3hat(xi)
+    print("temp \n", temp)
+    temp = sen3vee(temp)
+    print("temp \n", temp)
+
+    # test SEn3exp
+    xi = torch.randn(2,4,9).to(device)
+    temp1 = SEn3exp(xi)
+    temp2 = torch.linalg.matrix_exp(sen3hat(xi))
+
+    # print("temp1 \n", temp1[0,0,...])
+    # print("temp2 \n", temp2[0,0,...])
+
+    error = torch.norm(temp1 - temp2)
+    if error > 1e-6:
+        raise ValueError("error: ", error)
+    else:
+        print("SEn3exp test passed, error: ", error)
+
+
+    print("---------------------------------")
+    
+
+
+    
+
