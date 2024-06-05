@@ -16,6 +16,18 @@ def SO3exp(w: torch.Tensor, eps = 1e-6)->torch.Tensor:
     Rotation[~small_theta_mask] = c * Identity[~small_theta_mask] + (1-c) * outer_product(unit_w, unit_w) + s * so3hat(unit_w)
     return Rotation
 
+# def SO3log(R: torch.Tensor, eps = 1e-6)->torch.Tensor:
+#     """R shape (..., 3, 3)"""
+#     trace = torch.einsum('...ii->...', R)
+#     trace = torch.clamp(trace, -1, 3)
+#     theta = torch.acos((trace - 1.0) / 2.0)
+#     small_theta_mask = theta < eps
+#     Identity = torch.eye(3).expand(R.shape[:-2]+(3,3)).to(R.device)
+
+#     unit_w = torch.zeros_like(R)
+#     unit_w[~small_theta_mask] = (R[~small_theta_mask] - R[~small_theta_mask].transpose(-1,-2)) / (2.0 * torch.sin(theta[~small_theta_mask]).unsqueeze(-1))
+#     w = so3vee(unit_w)
+#     return w
     
 def outer_product(v1: torch.Tensor, v2: torch.Tensor)->torch.Tensor:
     """v1, v2 shape (..., 3)"""
@@ -78,7 +90,8 @@ def SO3leftJacoInv(phi: torch.Tensor, eps = 1e-6)->torch.Tensor:
     theta = torch.norm(phi, dim = -1, keepdim = True)
     small_theta_mask = theta[...,0] < eps
     ## check singularity
-    remaider = theta[~small_theta_mask] % (2 * torch.pi)
+    lage_theta_mask = theta[...,0] > 1.8 * torch.pi 
+    remaider = theta[lage_theta_mask] % (2 * torch.pi)
     assert torch.all( torch.min(remaider, torch.abs(2 * torch.pi - remaider)) > 1e-3 ), "theta should not be a multiple of 2pi"
     ## end check singularity
     Identity = torch.eye(3).expand(phi.shape[:-1]+(3,3)).to(phi.device)
@@ -229,7 +242,7 @@ if __name__ == '__main__':
 
 
     ## test SO3leftJaco
-    phi = torch.tensor([[torch.pi/3,0,0],[torch.pi*1.8,0,0],[0,0,0],[0,0,torch.pi/4]]).to(device).unsqueeze(0)
+    phi = torch.tensor([[torch.pi/3,0,0],[torch.pi*1.8,0,0],[1e-4,0,0],[0,0,0.]]).to(device).unsqueeze(0)
     phi = phi.repeat(2,1,1)
     # print("phi.shape", phi.shape)
     temp1 = SO3leftJaco(phi)
