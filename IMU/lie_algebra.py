@@ -16,18 +16,19 @@ def SO3exp(w: torch.Tensor, eps = 1e-6)->torch.Tensor:
     Rotation[~small_theta_mask] = c * Identity[~small_theta_mask] + (1-c) * outer_product(unit_w, unit_w) + s * so3hat(unit_w)
     return Rotation
 
-# def SO3log(R: torch.Tensor, eps = 1e-6)->torch.Tensor:
-#     """R shape (..., 3, 3)"""
-#     trace = torch.einsum('...ii->...', R)
-#     trace = torch.clamp(trace, -1, 3)
-#     theta = torch.acos((trace - 1.0) / 2.0)
-#     small_theta_mask = theta < eps
-#     Identity = torch.eye(3).expand(R.shape[:-2]+(3,3)).to(R.device)
+def SO3log(R: torch.Tensor, eps = 1e-6)->torch.Tensor:
+    """R shape (..., 3, 3)"""
+    trace = torch.einsum('...ii->...', R)
+    trace = torch.clamp(trace, -1, 3)
+    theta = torch.acos((trace - 1.0) / 2.0)
+    small_theta_mask = theta < eps
+    Identity = torch.eye(3).expand(R.shape[:-2]+(3,3)).to(R.device)
 
-#     unit_w = torch.zeros_like(R)
-#     unit_w[~small_theta_mask] = (R[~small_theta_mask] - R[~small_theta_mask].transpose(-1,-2)) / (2.0 * torch.sin(theta[~small_theta_mask]).unsqueeze(-1))
-#     w = so3vee(unit_w)
-#     return w
+    w_so3 = torch.zeros_like(R)
+    w_so3[small_theta_mask] = R[small_theta_mask] - Identity[small_theta_mask]
+    w_so3[~small_theta_mask] = (0.5 * theta[~small_theta_mask] / torch.sin(theta[~small_theta_mask])).unsqueeze(-1).unsqueeze(-1) * (R[~small_theta_mask] - R[~small_theta_mask].transpose(-1,-2))
+    w = so3vee(w_so3)
+    return w
     
 def outer_product(v1: torch.Tensor, v2: torch.Tensor)->torch.Tensor:
     """v1, v2 shape (..., 3)"""
@@ -64,11 +65,18 @@ def SEn3exp(xi: torch.Tensor, eps = 1e-6)->torch.Tensor:
     output = torch.eye(dim_mat).expand(xi.shape[:-1]+(dim_mat,dim_mat)).to(xi.device)
     output[..., :3, :3] = R
     Jl =SO3leftJaco(phi)
-    for i in range(1, round(xi.shape[-1]//3)):
-        output[..., :3, i+2] = (Jl @ xi[..., 3*i:3*(i+1)].unsqueeze(-1)).squeeze(-1)
+    temp_rest = Jl @ xi[..., 3:].reshape(*xi.shape[:-1], -1,3).transpose(-1,-2)
+    output[..., :3, 3:] = temp_rest
     return output
 
-
+def SEn3log(X: torch.Tensor, eps = 1e-6)->torch.Tensor:
+    """X shape (..., 3+n, 3+n), n = 1,2,3..."""
+    phi = SO3log(X[..., :3, :3])
+    xi = torch.zeros(X.shape[:-2]+((X.shape[-1]-2)*3,)).to(X.device)
+    xi[..., :3] = phi
+    temp_rest = SO3leftJacoInv(phi) @ X[..., :3, 3:]
+    xi[..., 3:] = temp_rest.transpose(-1,-2).reshape(*temp_rest.shape[:-2], -1)
+    return xi
 
 def SO3leftJaco(phi: torch.Tensor, eps = 1e-6)->torch.Tensor:
     """left jacobian of SO(3), phi shape (..., 3)"""
@@ -111,8 +119,8 @@ def SEn3inverse(X: torch.Tensor, numerial_invese = False)->torch.Tensor:
     else:
         X_inv = X.clone()
         X_inv[..., :3, :3] = X[..., :3, :3].transpose(-2, -1)
-        for i in range(3,X.shape[-1]):
-            X_inv[..., :3, i] = - torch.matmul(X_inv[..., :3, :3], X[..., :3, i].unsqueeze(-1)).squeeze(-1)
+        temp_rest = - torch.matmul(X_inv[..., :3, :3], X[..., :3, 3:])
+        X_inv[..., :3, 3:] = temp_rest
     return X_inv
 
 
@@ -211,7 +219,7 @@ if __name__ == '__main__':
 
     ## test SO3exp
     device = 'cuda'
-    w = torch.tensor([[torch.pi/3,0,0],[torch.pi/3,0,0],[0,torch.pi/3,0],[0,0,torch.pi/4]]).to(device).unsqueeze(0)
+    w = torch.tensor([[1.6469, 3.7091, 1.3493],[1e-7,0,0],[0,torch.pi/3,0],[0,0,torch.pi/4]]).to(device).unsqueeze(0)
     w = w.repeat(2,1,1)
     # print("w.shape", w.shape)
     R = SO3exp(w)
@@ -221,6 +229,24 @@ if __name__ == '__main__':
         raise ValueError("error: ", error)
     else:
         print("SO3exp test passed, error: ", error)
+
+    ## test SO3log
+    w_log = SO3log(R)
+    R2 = SO3exp(w_log)
+    error = torch.norm(R - R2)
+    # w_norm = torch.norm(w, dim = -1, keepdim = True)
+    # w_unit = w / w_norm
+    # w_clampwith2pi = w_unit * (w_norm % (2. *torch.pi))
+    # print("w_clampwith2pi \n", w_clampwith2pi)
+    # error = torch.norm(w_unit * (w_norm % (2. *torch.pi)) - w_log)
+    # for i in range(2):
+    #     for j in range(4):
+    #         print("error at ", i, j, ":", torch.norm(w[i,j,...] - w_log[i,j,...]), "w norm: ", torch.norm(w[i,j,...]))
+    if error > 1e-6:
+        raise ValueError("error: ", error)
+    else:
+        print("SO3log test passed, error: ", error)
+
 
 
     # test SEn3inverse
@@ -305,25 +331,32 @@ if __name__ == '__main__':
     # J_SO3 = SO3leftJaco(xi[..., :3])
     # print("J_SO3 \n", J_SO3[0,0,...])
 
-    xi = torch.arange(1,10).to(device)
-    temp = sen3hat(xi)
-    print("temp \n", temp)
-    temp = sen3vee(temp)
-    print("temp \n", temp)
+    # xi = torch.arange(1,10).to(device)
+    # temp = sen3hat(xi)
+    # print("temp \n", temp)
+    # temp = sen3vee(temp)
+    # print("temp \n", temp)
 
     # test SEn3exp
-    xi = torch.randn(2,4,9).to(device)
+    xi = torch.randn(2,4,6).to(device)
     temp1 = SEn3exp(xi)
     temp2 = torch.linalg.matrix_exp(sen3hat(xi))
-
-    # print("temp1 \n", temp1[0,0,...])
-    # print("temp2 \n", temp2[0,0,...])
 
     error = torch.norm(temp1 - temp2)
     if error > 1e-6:
         raise ValueError("error: ", error)
     else:
         print("SEn3exp test passed, error: ", error)
+
+    # test SEn3log
+    xi_log = SEn3log(temp1)
+    temp3 = SEn3exp(xi_log)
+    error = torch.norm(temp1 - temp3)
+    if error > 1e-6:
+        raise ValueError("error: ", error)
+    else:
+        print("SEn3log test passed, error: ", error)
+
 
 
     print("---------------------------------")
