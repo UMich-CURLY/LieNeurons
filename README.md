@@ -1,15 +1,35 @@
-# Lie Neurons: Adjoint Equivariant Neural Networks for Semi-simple Lie Algebras
+<h3 align="center"><strong>Lie Neurons: Adjoint Equivariant Neural Networks for Semi-simple Lie Algebras</strong></h3>
 
-Paper: [Link](https://arxiv.org/abs/2310.04521)
+  <p align="center">
+      <a href="https://jonathan-twz.github.io/" target='_blank'>Tzu-Yuan Lin</a><sup>*</sup>&nbsp;&nbsp;&nbsp;
+      <a href="https://tzuyuan.github.io/" target='_blank'>Minghan Zhu</a><sup>*</sup>&nbsp;&nbsp;&nbsp;
+      <a href="https://name.engin.umich.edu/people/ghaffari-maani/" target='_blank'>Maani Ghaffari</a><sup></sup>&nbsp;&nbsp;&nbsp;
+  <br />
+  <sup>*</sup>Eqaul Contributions&nbsp;&nbsp;&nbsp;
+  </p>
+</p>
 
-Poster: [Link](figures/Lie_Nuerons_ICML24.pdf)
+<p align="center">
+  <a href="https://arxiv.org/abs/2310.04521" target='_blank'>
+    <img src="https://img.shields.io/badge/Paper-%F0%9F%93%83-slategray">
+  </a>
 
+  <a href="https://github.com/UMich-CURLY/LieNeurons/blob/main/figures/Lie_Nuerons_ICML24.pdf" target='_blank'>
+    <img src="https://img.shields.io/badge/poster-%F0%9F%93%88-green">
+  </a>
+</p>
+
+## About
 An MLP framework that takes Lie algebraic data as inputs and is equivariant to the adjoint representation of the group by construction.
 
 ![front_figure](figures/lie_neurons_icon.jpg?raw=true "Title")
 
 ## Modules
 ![modules](figures/lie_neurons_modules.jpg?raw=true "Modules")
+
+## Updates
+* [07/2024] The initial code is open-sourced. We are still re-organizing the code. We plan to release a cleaner version of the code soon. Feel free to reach out if you have any questions! :)
+* [07/2024] We presented our paper at ICML 24!
 
 ## Docker
 * We provide [docker](https://docs.docker.com/get-started/) files in [`docker/`](https://github.com/UMich-CURLY/LieNeurons/tree/main/docker).
@@ -18,6 +38,8 @@ An MLP framework that takes Lie algebraic data as inputs and is equivariant to t
 ## Training the Network
 * All the training codes for experiments are in [`experiment/`](https://github.com/UMich-CURLY/LieNeurons/tree/main/experiment).
 * Before training, you'll have to generate the data using Python scripts in [`data_gen`](https://github.com/UMich-CURLY/LieNeurons/tree/main/data_gen).
+* Empirically, we found out that using a lower learning rate (around `3e-5`) helps the convergence during training. This is likely due to the lack of normalization layers.
+* When working with $\mathfrak{so}(3)$, Lie Neurons specialize to [Vector Neurons](https://github.com/FlyingGiraffe/vnn) with an additional bracket nonlinearity and a channel mixing layer. Since the inner product is well-defined on $\mathfrak{so}(3)$, one can plug in the batch normalization layers proposed in Vector Neurons to improve stability during training. 
 
 ## Citation
 If you find the work useful, please kindly cite our paper:
