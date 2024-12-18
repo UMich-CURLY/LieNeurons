@@ -1,8 +1,8 @@
 <h3 align="center"><strong>Lie Neurons: Adjoint Equivariant Neural Networks for Semi-simple Lie Algebras</strong></h3>
 
   <p align="center">
-      <a href="https://jonathan-twz.github.io/" target='_blank'>Tzu-Yuan Lin</a><sup>*</sup>&nbsp;&nbsp;&nbsp;
-      <a href="https://tzuyuan.github.io/" target='_blank'>Minghan Zhu</a><sup>*</sup>&nbsp;&nbsp;&nbsp;
+      <a href="https://tzuyuan.github.io/" target='_blank'>Tzu-Yuan Lin</a><sup>*</sup>&nbsp;&nbsp;&nbsp;
+      <a href="https://minghanz.github.io/" target='_blank'>Minghan Zhu</a><sup>*</sup>&nbsp;&nbsp;&nbsp;
       <a href="https://name.engin.umich.edu/people/ghaffari-maani/" target='_blank'>Maani Ghaffari</a><sup></sup>&nbsp;&nbsp;&nbsp;
   <br />
   <sup>*</sup>Eqaul Contributions&nbsp;&nbsp;&nbsp;
